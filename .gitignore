@@ -1,0 +1,44 @@
+# Secrets — never commit
+.env
+
+# Local cache / checkpointer db (CLAUDE.md §6 — response cache + LangGraph
+# checkpointer only, never the domain schema; not shared across the team)
+cache.db
+cache.db-shm
+cache.db-wal
+
+# Vector index — rebuilt deterministically from corpus/ via `make index`
+# (spec.md §14.2: commit the corpus + build script + manifest hash, not the
+# binary index — avoids daily merge conflicts across 4 developer machines)
+chroma_db/
+
+# Model/training checkpoints (CLAUDE.md §6)
+*.ckpt
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# OS/editor noise
+.DS_Store
+.vscode/
+.idea/
+
+# React (TypeScript) + Vite frontend (ui/web/) — spec.md §14.1.2
+ui/web/node_modules/
+ui/web/dist/
+ui/web/.vite/
+ui/web/*.local
+npm-debug.log*
+
+# Un-ignore ui/web/.env specifically: the root ".env" rule above (secrets,
+# never commit) would otherwise also silently swallow this file, but it
+# holds no secrets — just the shared-default VITE_API_PORT the whole team
+# needs (see its own header comment). A per-developer override still goes
+# in ui/web/.env.local, which the `*.local` rule above already ignores.
+!ui/web/.env
