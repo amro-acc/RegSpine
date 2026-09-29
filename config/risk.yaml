@@ -1,0 +1,25 @@
+# Deterministic risk scoring configuration.
+# The LLM evaluates and supplies five risk factors (integers 1-5, each with a written 
+# rationale and cited basis). The weights defined here are used by the application code 
+# to calculate the final score. To ensure consistency, the LLM should never compute 
+# the final mathematical score itself.
+
+weights:
+  regulatory_severity: 0.30      # Exposure to sanctions or regulatory action
+  enforcement_likelihood: 0.25   # Regulator focus and historical precedent
+  business_exposure: 0.20        # Impact on entities, customers, and revenue
+  control_weakness: 0.15         # Deficiencies in existing internal controls
+  remediation_urgency: 0.10      # Proximity to regulatory deadlines
+
+# Final calculation: risk_score = round(sum(weight * factor) / 5 * 100)
+bands:
+  critical: 80     # risk_score >= 80
+  high: 60         # risk_score >= 60
+  medium: 40       # risk_score >= 40
+  # Any score below 40 is categorized as "low"
+
+deadline_override:
+  # Automatically elevate the risk band for obligations with impending statutory deadlines,
+  # regardless of the calculated base score.
+  within_days: 90
+  floor_band: high
