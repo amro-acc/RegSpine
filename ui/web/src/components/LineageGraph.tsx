@@ -22,10 +22,10 @@ import type {
   SelectedNode,
 } from "../types";
 
-// Left-to-right DAG, one fixed x-offset per pipeline stage (spec.md §12.3's
-// traceability graph: Regulations -> Obligations -> Controls -> Gaps, plus
-// Remediations as the terminal stage). y is staggered per-column below so
-// nodes in the same stage don't overlap.
+// Left-to-right DAG, one fixed x-offset per pipeline stage (traceability
+// graph: Regulations -> Obligations -> Controls -> Gaps, plus Remediations
+// as the terminal stage). y is staggered per-column below so nodes in the
+// same stage don't overlap.
 const COLUMN_X: Record<NodeKind, number> = {
   obligation: 0,
   control: 320,

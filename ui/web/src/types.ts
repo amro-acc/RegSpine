@@ -142,8 +142,7 @@ export interface LineageResponse {
   obligations: LineageObligation[];
 }
 
-// Feature 2 (spec.md §7.2.11), reopened from docs/roadmap.md's cut list --
-// mirrors src/core/schemas.py's ClauseChange, as returned (nested inside
+// Mirrors src/core/schemas.py's ClauseChange, as returned (nested inside
 // text_diff) by POST /api/v1/changes/diff.
 export type ChangeType = "added" | "removed" | "amended" | "renumbered" | "unchanged";
 export type Materiality = "high" | "medium" | "low" | "editorial";
@@ -224,8 +223,8 @@ export interface ChangeDiffResponse {
   gaps_count: number;
 }
 
-// Roadmap features 13/14 (cross-regulation intelligence + regulatory
-// contradiction detection), reopened 2026-09-29 -- POST /api/v1/obligations/relations.
+// Cross-regulation intelligence + regulatory contradiction detection --
+// POST /api/v1/obligations/relations.
 export type RelationType = "unrelated" | "overlaps" | "conflicts_with" | "supersedes" | "implements";
 
 export interface ObligationRelationGroupRequest {

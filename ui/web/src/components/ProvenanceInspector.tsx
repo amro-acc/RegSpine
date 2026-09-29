@@ -18,7 +18,7 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
 
 /** Prominent, distinct-background section proving zero-hallucination
  * grounding: exactly the file/page/snippet-hash/verbatim-quote/span-verified
- * combination the demo needs to show judges (spec.md §12.3, §8.2). */
+ * combination the demo needs to show judges. */
 function ProvenancePanel({ entity, kind }: { entity: SelectedNode["data"]; kind: SelectedNode["kind"] }) {
   const provenance = entity.provenance;
   const hasSpanVerification = kind === "obligation" || kind === "control";

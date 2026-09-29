@@ -70,16 +70,16 @@ function App() {
   const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Feature 2 (spec.md §7.2.11), reopened from docs/roadmap.md's cut list --
-  // diffs a pasted "v2" regulation text against the obligations/mappings
+  // Diffs a pasted "v2" regulation text against the obligations/mappings
   // already produced by the run above, via POST /api/v1/changes/diff.
   const [newRegulationText, setNewRegulationText] = useState("");
   const [diffStatus, setDiffStatus] = useState<RunStatus>("idle");
   const [diffResponse, setDiffResponse] = useState<ChangeDiffResponse | null>(null);
   const [diffError, setDiffError] = useState<string | null>(null);
 
-  // Roadmap features 13/14 (cross-regulation intelligence + contradiction
-  // detection), reopened 2026-09-29 -- POST /api/v1/obligations/relations.
+  // Cross-regulation intelligence: surfaces overlaps and contradictions
+  // between obligations across separate audit runs, via
+  // POST /api/v1/obligations/relations.
   // Each group is a prior audit run (run_id) labeled with the regulator it
   // came from; the backend only compares obligations across groups, never
   // within one, so at least 2 groups are required.
@@ -188,7 +188,7 @@ function App() {
       <header className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-2.5">
         <div className="flex items-center gap-2">
           <ShieldCheck className="text-indigo-600" size={22} />
-          <h1 className="text-lg font-semibold text-gray-900">RegAgentX</h1>
+          <h1 className="text-lg font-semibold text-gray-900">RegSpine</h1>
           <span className="text-xs text-gray-400">Autonomous regulatory compliance engine</span>
         </div>
 

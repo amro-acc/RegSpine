@@ -12,7 +12,7 @@ import type {
 
 // src/api/main.py runs on :$VITE_API_PORT (make api, default 8055 -- see
 // ui/web/.env); this SPA runs on :5173 (make ui) -- CORSMiddleware in
-// main.py explicitly allows this origin (spec.md §14.1.2).
+// main.py explicitly allows this origin.
 //
 // Read from an env var, not hardcoded, because this project has already
 // twice hit a dev port becoming permanently unusable on a specific
