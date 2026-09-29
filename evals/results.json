@@ -1,0 +1,438 @@
+{
+  "generated_at": "2026-09-29T06:54:36.989091+00:00",
+  "extraction": {
+    "true_positives": 9,
+    "false_positives": 1,
+    "false_negatives": 1,
+    "precision": 0.9,
+    "recall": 0.9,
+    "f1": 0.9,
+    "mandatory_flag_accuracy": 1.0,
+    "applicability_accuracy": 1.0,
+    "cases": [
+      {
+        "id": "GO-01",
+        "matches": [
+          {
+            "golden": "Report major ICT-related incidents to the competent authority within 24 hours of detection",
+            "score": 0.6832740213523132,
+            "mandatory_match": true
+          }
+        ]
+      },
+      {
+        "id": "GO-02",
+        "matches": [
+          {
+            "golden": "Maintain and update at least annually a register of information on ICT third-party contractual arrangements",
+            "score": 0.6965174129353234,
+            "mandatory_match": true
+          }
+        ]
+      },
+      {
+        "id": "GO-03",
+        "matches": [
+          {
+            "golden": "May rely on pooled, third-party-coordinated testing arrangements to satisfy the resilience testing programme, where proportionate",
+            "score": 0.7288135593220338,
+            "mandatory_match": true
+          }
+        ]
+      },
+      {
+        "id": "GO-04",
+        "matches": [
+          {
+            "golden": "Establish, document, and periodically test an ICT business continuity policy with defined RTOs/RPOs for critical functions",
+            "score": 0.8418079096045198,
+            "mandatory_match": true
+          }
+        ]
+      },
+      {
+        "id": "GO-05",
+        "matches": [
+          {
+            "golden": "Submit an early warning within 24 hours and a full incident notification within 72 hours of becoming aware of a significant incident",
+            "score": 0.764102564102564,
+            "mandatory_match": true
+          }
+        ]
+      },
+      {
+        "id": "GO-06",
+        "matches": [
+          {
+            "golden": "Implement proportionate technical, operational, and organisational risk-management measures following an all-hazards approach",
+            "score": 0.8345323741007195,
+            "mandatory_match": true
+          }
+        ]
+      },
+      {
+        "id": "GO-07",
+        "matches": [
+          {
+            "golden": "Address supply chain security in relationships with direct suppliers and service providers as part of risk management",
+            "score": 0.8405063291139241,
+            "mandatory_match": true
+          }
+        ]
+      },
+      {
+        "id": "GO-08",
+        "matches": [
+          {
+            "golden": "Maintain a minimum CET1 capital ratio of 4.5% of risk-weighted assets at all times",
+            "score": 0.789272030651341,
+            "mandatory_match": true
+          }
+        ]
+      },
+      {
+        "id": "GO-09",
+        "matches": [
+          {
+            "golden": "Maintain a liquidity coverage ratio of at least 100% over a 30-day stress scenario",
+            "score": 0.8012422360248447,
+            "mandatory_match": true
+          }
+        ]
+      },
+      {
+        "id": "GO-10",
+        "matches": [
+          {
+            "golden": "Limit single-counterparty (or connected group) exposure to no more than 25% of available Tier 1 capital",
+            "score": 0.4344569288389513,
+            "missed": true
+          }
+        ]
+      }
+    ]
+  },
+  "mapping": {
+    "top1_accuracy": 0.7142857142857143,
+    "top3_recall": 0.8571428571428571,
+    "classification_agreement": 1.0,
+    "needs_review_rate": 0.0,
+    "cosine_reranker_alignment_rate": 0.5,
+    "cases": [
+      {
+        "id": "GM-01",
+        "ranked_refs": [
+          "ctrl-01-target",
+          "ctrl-01-d1",
+          "ctrl-01-d3",
+          "ctrl-01-d2"
+        ],
+        "expected_control_id": "ctrl-01-target",
+        "top1_hit": true,
+        "top3_hit": true,
+        "cosine_top1_ref": "ctrl-01-target",
+        "reranker_top1_ref": "ctrl-01-target",
+        "predicted_coverage": "full",
+        "expected_coverage": "full",
+        "classification_match": true
+      },
+      {
+        "id": "GM-02",
+        "ranked_refs": [
+          null,
+          null,
+          "ctrl-02-d1"
+        ],
+        "expected_control_id": "ctrl-02-target",
+        "top1_hit": false,
+        "top3_hit": false,
+        "cosine_top1_ref": "ctrl-02-target",
+        "reranker_top1_ref": null,
+        "predicted_coverage": "none",
+        "expected_coverage": "none",
+        "classification_match": true
+      },
+      {
+        "id": "GM-03",
+        "ranked_refs": [
+          null,
+          null,
+          "ctrl-03-d2"
+        ],
+        "expected_control_id": null,
+        "top1_hit": null,
+        "top3_hit": null,
+        "cosine_top1_ref": "ctrl-03-d2",
+        "reranker_top1_ref": null,
+        "predicted_coverage": "none",
+        "expected_coverage": "none",
+        "classification_match": true
+      },
+      {
+        "id": "GM-04",
+        "ranked_refs": [
+          "ctrl-04-target",
+          null,
+          null,
+          null
+        ],
+        "expected_control_id": "ctrl-04-target",
+        "top1_hit": true,
+        "top3_hit": true,
+        "cosine_top1_ref": "ctrl-04-target",
+        "reranker_top1_ref": "ctrl-04-target",
+        "predicted_coverage": "full",
+        "expected_coverage": "full",
+        "classification_match": true
+      },
+      {
+        "id": "GM-05",
+        "ranked_refs": [
+          null,
+          "ctrl-05-target",
+          null
+        ],
+        "expected_control_id": "ctrl-05-target",
+        "top1_hit": false,
+        "top3_hit": true,
+        "cosine_top1_ref": "ctrl-05-target",
+        "reranker_top1_ref": null,
+        "predicted_coverage": "partial",
+        "expected_coverage": "partial",
+        "classification_match": true
+      },
+      {
+        "id": "GM-06",
+        "ranked_refs": [
+          null,
+          null,
+          null
+        ],
+        "expected_control_id": null,
+        "top1_hit": null,
+        "top3_hit": null,
+        "cosine_top1_ref": "ctrl-06-d1",
+        "reranker_top1_ref": null,
+        "predicted_coverage": "none",
+        "expected_coverage": "none",
+        "classification_match": true
+      },
+      {
+        "id": "GM-07",
+        "ranked_refs": [
+          "ctrl-07-target",
+          null,
+          null
+        ],
+        "expected_control_id": "ctrl-07-target",
+        "top1_hit": true,
+        "top3_hit": true,
+        "cosine_top1_ref": "ctrl-07-target",
+        "reranker_top1_ref": "ctrl-07-target",
+        "predicted_coverage": "full",
+        "expected_coverage": "full",
+        "classification_match": true
+      },
+      {
+        "id": "GM-08",
+        "ranked_refs": [
+          "ctrl-08-target",
+          null,
+          null
+        ],
+        "expected_control_id": "ctrl-08-target",
+        "top1_hit": true,
+        "top3_hit": true,
+        "cosine_top1_ref": "ctrl-08-target",
+        "reranker_top1_ref": "ctrl-08-target",
+        "predicted_coverage": "none",
+        "expected_coverage": "none",
+        "classification_match": true
+      },
+      {
+        "id": "GM-09",
+        "ranked_refs": [
+          "ctrl-09-target",
+          null,
+          null
+        ],
+        "expected_control_id": "ctrl-09-target",
+        "top1_hit": true,
+        "top3_hit": true,
+        "cosine_top1_ref": "ctrl-09-target",
+        "reranker_top1_ref": "ctrl-09-target",
+        "predicted_coverage": "full",
+        "expected_coverage": "full",
+        "classification_match": true
+      },
+      {
+        "id": "GM-10",
+        "ranked_refs": [
+          null,
+          null,
+          null
+        ],
+        "expected_control_id": null,
+        "top1_hit": null,
+        "top3_hit": null,
+        "cosine_top1_ref": "ctrl-10-d3",
+        "reranker_top1_ref": null,
+        "predicted_coverage": "none",
+        "expected_coverage": "none",
+        "classification_match": true
+      }
+    ]
+  },
+  "provenance": {
+    "total_obligations": 10,
+    "verified_count": 10,
+    "grounding_rate_pct": 100.0,
+    "hallucination_rate_pct": 0.0,
+    "hash_integrity_rate_pct": 100.0,
+    "self_report_inconsistencies": 0,
+    "cases": [
+      {
+        "case_id": "GO-01",
+        "obligation_text": "Financial entities must report major ICT-related incidents to the competent authority using the standardised reporting template referred to in Article 20.",
+        "independently_verified": true,
+        "agent_reported_verified": true,
+        "match_ratio": 1.0,
+        "method": "exact",
+        "hash_ok": true
+      },
+      {
+        "case_id": "GO-02",
+        "obligation_text": "Financial entities must maintain and update at least annually a register of information on all contractual arrangements with ICT third-party service providers, distinguishing between arrangements supporting critical or important functions and those that do not.",
+        "independently_verified": true,
+        "agent_reported_verified": true,
+        "match_ratio": 1.0,
+        "method": "exact",
+        "hash_ok": true
+      },
+      {
+        "case_id": "GO-03",
+        "obligation_text": "Financial entities are allowed, where proportionate to their size and overall risk profile, to rely on pooled testing arrangements coordinated by a third party to satisfy the digital operational resilience testing programme requirement.",
+        "independently_verified": true,
+        "agent_reported_verified": true,
+        "match_ratio": 1.0,
+        "method": "exact",
+        "hash_ok": true
+      },
+      {
+        "case_id": "GO-04",
+        "obligation_text": "Financial entities must establish, document, and periodically test an ICT business continuity policy that defines recovery time objectives and recovery point objectives for critical or important functions.",
+        "independently_verified": true,
+        "agent_reported_verified": true,
+        "match_ratio": 1.0,
+        "method": "exact",
+        "hash_ok": true
+      },
+      {
+        "case_id": "GO-05",
+        "obligation_text": "Essential and important entities must submit an early warning to the competent CSIRT and a full incident notification following a significant incident.",
+        "independently_verified": true,
+        "agent_reported_verified": true,
+        "match_ratio": 1.0,
+        "method": "exact",
+        "hash_ok": true
+      },
+      {
+        "case_id": "GO-06",
+        "obligation_text": "Essential and important entities must implement appropriate and proportionate technical, operational, and organisational measures to manage risks to the security of network and information systems, following an all-hazards approach.",
+        "independently_verified": true,
+        "agent_reported_verified": true,
+        "match_ratio": 1.0,
+        "method": "exact",
+        "hash_ok": true
+      },
+      {
+        "case_id": "GO-07",
+        "obligation_text": "Essential entities must address supply chain security, including security-related aspects of relationships with direct suppliers and service providers, as part of their risk management measures.",
+        "independently_verified": true,
+        "agent_reported_verified": true,
+        "match_ratio": 1.0,
+        "method": "exact",
+        "hash_ok": true
+      },
+      {
+        "case_id": "GO-08",
+        "obligation_text": "Banks must maintain a minimum Common Equity Tier 1 capital ratio of 4.5% of risk-weighted assets at all times, in addition to the capital conservation buffer.",
+        "independently_verified": true,
+        "agent_reported_verified": true,
+        "match_ratio": 1.0,
+        "method": "exact",
+        "hash_ok": true
+      },
+      {
+        "case_id": "GO-09",
+        "obligation_text": "Banks must maintain a liquidity coverage ratio of at least 100% by holding sufficient high-quality liquid assets to cover total net cash outflows over a 30 calendar-day liquidity stress scenario.",
+        "independently_verified": true,
+        "agent_reported_verified": true,
+        "match_ratio": 1.0,
+        "method": "exact",
+        "hash_ok": true
+      },
+      {
+        "case_id": "GO-10",
+        "obligation_text": "A bank must ensure that its exposure to a single counterparty or group of connected counterparties does not exceed 25% of the bank's available Tier 1 capital, except where a specific exemption applies to exposures to sovereigns.",
+        "independently_verified": true,
+        "agent_reported_verified": true,
+        "match_ratio": 1.0,
+        "method": "exact",
+        "hash_ok": true
+      }
+    ]
+  },
+  "judge_agreement": {
+    "error": "503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}"
+  },
+  "relation": {
+    "accuracy": 1.0,
+    "correct": 5,
+    "total": 5,
+    "cases": [
+      {
+        "id": "GR-01",
+        "expected_relation_type": "conflicts_with",
+        "predicted_relation_type": "conflicts_with",
+        "match": true,
+        "rationale": "Basel III requires that \"Financial institutions shall retain full transaction records for a minimum of ten years from the date of the transaction,\" implying long-term retention of all transaction records. GDPR requires that \"Financial institutions shall erase personal data relating to a data subject no later than five years after the data subject's account is closed, upon request,\" which can require deletion of personal data embedded in those same transaction records well before the ten-year minimum. When transaction records contain personal data relating to a data subject who requests erasure, retaining the full record for ten years conflicts with the duty to erase that personal data within five years of account closure."
+      },
+      {
+        "id": "GR-02",
+        "expected_relation_type": "overlaps",
+        "predicted_relation_type": "overlaps",
+        "match": true,
+        "rationale": "Obligation A (DORA) requires that \"Financial entities shall report major ICT-related incidents to the competent authority within 24 hours of detection.\" Obligation B (NIS2) requires that \"Essential entities shall submit an early warning to the competent CSIRT within 24 hours of becoming aware of a significant incident.\" Both target the same underlying control: an initial incident notification within 24 hours of knowledge of a serious ICT/significant incident, albeit to different recipients (\"competent authority\" vs \"competent CSIRT\") and with slightly different framing (\"report\" vs \"early warning\")."
+      },
+      {
+        "id": "GR-03",
+        "expected_relation_type": "supersedes",
+        "predicted_relation_type": "supersedes",
+        "match": true,
+        "rationale": "Obligation A (PCI DSS v3.2.1) requires merchants to \"encrypt cardholder data using TLS 1.1 or higher for transmission over open, public networks.\" Obligation B (PCI DSS v4.0) updates this same requirement to \"encrypt cardholder data using TLS 1.2 or higher for transmission over open, public networks, with support for TLS 1.1 removed entirely.\" Both address the identical control (TLS encryption of cardholder data over open networks), but B tightens the minimum version and explicitly deprecates TLS 1.1, making it a stricter, later version of the same obligation."
+      },
+      {
+        "id": "GR-04",
+        "expected_relation_type": "implements",
+        "predicted_relation_type": "implements",
+        "match": true,
+        "rationale": "Obligation A requires banks to \"maintain a robust operational resilience capability commensurate with the nature, scale, and complexity of their operations,\" which is a broad requirement to withstand and recover from disruptions. Obligation B requires financial entities to \"establish and maintain a documented ICT-related incident response and recovery plan detailing escalation procedures, roles, and communication channels,\" which is a specific control focused on ICT incidents that directly supports and forms part of the broader operational resilience capability mandated in A."
+      },
+      {
+        "id": "GR-05",
+        "expected_relation_type": "unrelated",
+        "predicted_relation_type": "unrelated",
+        "match": true,
+        "rationale": null
+      }
+    ]
+  },
+  "headline": {
+    "extraction_f1": 0.9,
+    "mapping_accuracy_pct": 100.0,
+    "provenance_grounding_rate_pct": 100.0,
+    "fallback_review_trigger_rate_pct": 0.0,
+    "relation_classification_accuracy_pct": 100.0
+  }
+}

@@ -1,0 +1,129 @@
+{
+  "_comment": "Synthetic golden set (10 cases) for evals/scorers/mapping_scorer.py. Each case pairs one obligation with a small candidate-control pool (1 correct target + distractors) so retrieval+rerank ranking (Top-1/Top-3) can be scored, not just the final LLM classification. expected_gap_class is null when expected_coverage_level is 'full' and no gap is expected; otherwise it's the deterministic gap_class audit_agent.py would assign from that coverage_level (none -> no_control, partial -> partial_coverage).",
+  "cases": [
+    {
+      "id": "GM-01",
+      "obligation_text": "Report major ICT-related incidents to the competent authority within 24 hours of detection",
+      "candidate_controls": [
+        {"id": "ctrl-01-target", "title": "Major incident escalation control", "design_description": "Incident response team escalates and reports major incidents to senior management and the competent authority within 12 hours of detection.", "control_type": "detective", "automation": "semi", "frequency": "per_incident"},
+        {"id": "ctrl-01-d1", "title": "Physical access badge control", "design_description": "Building security issues and revokes access badges for staff.", "control_type": "preventive", "automation": "automated", "frequency": "continuous"},
+        {"id": "ctrl-01-d2", "title": "Vendor invoice approval control", "design_description": "Finance approves vendor invoices above a materiality threshold before payment.", "control_type": "preventive", "automation": "manual", "frequency": "per_transaction"},
+        {"id": "ctrl-01-d3", "title": "Password rotation policy control", "design_description": "IT enforces 90-day password rotation for all employee accounts.", "control_type": "preventive", "automation": "automated", "frequency": "continuous"}
+      ],
+      "expected_control_id": "ctrl-01-target",
+      "expected_coverage_level": "full",
+      "expected_gap_class": null
+    },
+    {
+      "id": "GM-02",
+      "obligation_text": "Report major ICT-related incidents to the competent authority within 24 hours of detection",
+      "candidate_controls": [
+        {"id": "ctrl-02-target", "title": "Weekly incident review control", "design_description": "Incident response team compiles and reports major incidents to the competent authority in a weekly batch summary.", "control_type": "detective", "automation": "manual", "frequency": "weekly"},
+        {"id": "ctrl-02-d1", "title": "Data retention control", "design_description": "Archives transaction logs for seven years for audit purposes.", "control_type": "preventive", "automation": "automated", "frequency": "continuous"},
+        {"id": "ctrl-02-d2", "title": "Vendor invoice approval control", "design_description": "Finance approves vendor invoices above a materiality threshold before payment.", "control_type": "preventive", "automation": "manual", "frequency": "per_transaction"}
+      ],
+      "_note": "Corrected 2026-09-28: was labelled 'partial'. A weekly-batch cadence is structurally incapable of ever meeting a 24-hour deadline (a ~7x mismatch, not a close miss) -- re-reviewed against GPT-5.1's own well-reasoned 'none' verdict (see BENCHMARK_REPORT.md's mapping-accuracy investigation) and the label was the one that was wrong, not the model.",
+      "expected_control_id": "ctrl-02-target",
+      "expected_coverage_level": "none",
+      "expected_gap_class": "no_control"
+    },
+    {
+      "id": "GM-03",
+      "obligation_text": "Report major ICT-related incidents to the competent authority within 24 hours of detection",
+      "candidate_controls": [
+        {"id": "ctrl-03-d1", "title": "Physical access badge control", "design_description": "Building security issues and revokes access badges for staff.", "control_type": "preventive", "automation": "automated", "frequency": "continuous"},
+        {"id": "ctrl-03-d2", "title": "Data retention control", "design_description": "Archives transaction logs for seven years for audit purposes.", "control_type": "preventive", "automation": "automated", "frequency": "continuous"},
+        {"id": "ctrl-03-d3", "title": "Password rotation policy control", "design_description": "IT enforces 90-day password rotation for all employee accounts.", "control_type": "preventive", "automation": "automated", "frequency": "continuous"}
+      ],
+      "expected_control_id": null,
+      "expected_coverage_level": "none",
+      "expected_gap_class": "no_control"
+    },
+    {
+      "id": "GM-04",
+      "obligation_text": "Maintain and update at least annually a register of information on ICT third-party contractual arrangements",
+      "candidate_controls": [
+        {"id": "ctrl-04-target", "title": "ICT vendor register control", "design_description": "Vendor management maintains and reviews a register of all ICT third-party contracts annually, distinguishing critical from non-critical arrangements.", "control_type": "preventive", "automation": "semi", "frequency": "annual"},
+        {"id": "ctrl-04-d1", "title": "Password rotation policy control", "design_description": "IT enforces 90-day password rotation for all employee accounts.", "control_type": "preventive", "automation": "automated", "frequency": "continuous"},
+        {"id": "ctrl-04-d2", "title": "Physical access badge control", "design_description": "Building security issues and revokes access badges for staff.", "control_type": "preventive", "automation": "automated", "frequency": "continuous"},
+        {"id": "ctrl-04-d3", "title": "Major incident escalation control", "design_description": "Incident response team escalates and reports major incidents to senior management within 12 hours of detection.", "control_type": "detective", "automation": "semi", "frequency": "per_incident"}
+      ],
+      "expected_control_id": "ctrl-04-target",
+      "expected_coverage_level": "full",
+      "expected_gap_class": null
+    },
+    {
+      "id": "GM-05",
+      "obligation_text": "Establish, document, and periodically test an ICT business continuity policy with defined RTOs/RPOs for critical functions",
+      "candidate_controls": [
+        {"id": "ctrl-05-target", "title": "IT disaster recovery control", "design_description": "IT operates a documented backup and restoration process, tested annually, without a formally defined recovery time or recovery point objective.", "control_type": "corrective", "automation": "semi", "frequency": "annual"},
+        {"id": "ctrl-05-d1", "title": "Vendor invoice approval control", "design_description": "Finance approves vendor invoices above a materiality threshold before payment.", "control_type": "preventive", "automation": "manual", "frequency": "per_transaction"},
+        {"id": "ctrl-05-d2", "title": "Data retention control", "design_description": "Archives transaction logs for seven years for audit purposes.", "control_type": "preventive", "automation": "automated", "frequency": "continuous"}
+      ],
+      "expected_control_id": "ctrl-05-target",
+      "expected_coverage_level": "partial",
+      "expected_gap_class": "partial_coverage"
+    },
+    {
+      "id": "GM-06",
+      "obligation_text": "Address supply chain security in relationships with direct suppliers and service providers as part of risk management",
+      "candidate_controls": [
+        {"id": "ctrl-06-d1", "title": "Vendor invoice approval control", "design_description": "Finance approves vendor invoices above a materiality threshold before payment.", "control_type": "preventive", "automation": "manual", "frequency": "per_transaction"},
+        {"id": "ctrl-06-d2", "title": "Password rotation policy control", "design_description": "IT enforces 90-day password rotation for all employee accounts.", "control_type": "preventive", "automation": "automated", "frequency": "continuous"},
+        {"id": "ctrl-06-d3", "title": "Data retention control", "design_description": "Archives transaction logs for seven years for audit purposes.", "control_type": "preventive", "automation": "automated", "frequency": "continuous"}
+      ],
+      "expected_control_id": null,
+      "expected_coverage_level": "none",
+      "expected_gap_class": "no_control"
+    },
+    {
+      "id": "GM-07",
+      "obligation_text": "Maintain a minimum CET1 capital ratio of 4.5% of risk-weighted assets at all times",
+      "candidate_controls": [
+        {"id": "ctrl-07-target", "title": "Capital adequacy monitoring control", "design_description": "Treasury calculates and monitors the CET1 capital ratio daily, with an internal floor of 11% against the 4.5% regulatory minimum, and escalates any breach immediately.", "control_type": "detective", "automation": "automated", "frequency": "continuous"},
+        {"id": "ctrl-07-d1", "title": "Physical access badge control", "design_description": "Building security issues and revokes access badges for staff.", "control_type": "preventive", "automation": "automated", "frequency": "continuous"},
+        {"id": "ctrl-07-d2", "title": "Password rotation policy control", "design_description": "IT enforces 90-day password rotation for all employee accounts.", "control_type": "preventive", "automation": "automated", "frequency": "continuous"}
+      ],
+      "expected_control_id": "ctrl-07-target",
+      "expected_coverage_level": "full",
+      "expected_gap_class": null
+    },
+    {
+      "id": "GM-08",
+      "obligation_text": "Maintain a liquidity coverage ratio of at least 100% over a 30-day stress scenario",
+      "candidate_controls": [
+        {"id": "ctrl-08-target", "title": "Liquidity ratio review control", "design_description": "Treasury reviews the liquidity coverage ratio quarterly against an internal target of 95%, below the regulatory minimum, with manual sign-off only.", "control_type": "detective", "automation": "manual", "frequency": "quarterly"},
+        {"id": "ctrl-08-d1", "title": "Vendor invoice approval control", "design_description": "Finance approves vendor invoices above a materiality threshold before payment.", "control_type": "preventive", "automation": "manual", "frequency": "per_transaction"},
+        {"id": "ctrl-08-d2", "title": "Data retention control", "design_description": "Archives transaction logs for seven years for audit purposes.", "control_type": "preventive", "automation": "automated", "frequency": "continuous"}
+      ],
+      "_note": "Corrected 2026-09-28: was labelled 'partial'. The control explicitly targets 95%, below the 100% regulatory floor, by design -- it was never intended to meet the obligation, not merely falling short of it operationally. Re-reviewed against GPT-5.1's own well-reasoned 'none' verdict (see BENCHMARK_REPORT.md's mapping-accuracy investigation) and the label was the one that was wrong, not the model.",
+      "expected_control_id": "ctrl-08-target",
+      "expected_coverage_level": "none",
+      "expected_gap_class": "no_control"
+    },
+    {
+      "id": "GM-09",
+      "obligation_text": "Limit single-counterparty (or connected group) exposure to no more than 25% of available Tier 1 capital",
+      "candidate_controls": [
+        {"id": "ctrl-09-target", "title": "Large exposure limit control", "design_description": "Credit risk monitors single-counterparty and connected-group exposures daily against a 20% internal limit, tighter than the 25% regulatory cap, with automated alerts on approach.", "control_type": "preventive", "automation": "automated", "frequency": "continuous"},
+        {"id": "ctrl-09-d1", "title": "Password rotation policy control", "design_description": "IT enforces 90-day password rotation for all employee accounts.", "control_type": "preventive", "automation": "automated", "frequency": "continuous"},
+        {"id": "ctrl-09-d2", "title": "Physical access badge control", "design_description": "Building security issues and revokes access badges for staff.", "control_type": "preventive", "automation": "automated", "frequency": "continuous"}
+      ],
+      "expected_control_id": "ctrl-09-target",
+      "expected_coverage_level": "full",
+      "expected_gap_class": null
+    },
+    {
+      "id": "GM-10",
+      "obligation_text": "Implement proportionate technical, operational, and organisational risk-management measures following an all-hazards approach",
+      "candidate_controls": [
+        {"id": "ctrl-10-d1", "title": "Vendor invoice approval control", "design_description": "Finance approves vendor invoices above a materiality threshold before payment.", "control_type": "preventive", "automation": "manual", "frequency": "per_transaction"},
+        {"id": "ctrl-10-d2", "title": "Data retention control", "design_description": "Archives transaction logs for seven years for audit purposes.", "control_type": "preventive", "automation": "automated", "frequency": "continuous"},
+        {"id": "ctrl-10-d3", "title": "Password rotation policy control", "design_description": "IT enforces 90-day password rotation for all employee accounts.", "control_type": "preventive", "automation": "automated", "frequency": "continuous"}
+      ],
+      "expected_control_id": null,
+      "expected_coverage_level": "none",
+      "expected_gap_class": "no_control"
+    }
+  ]
+}

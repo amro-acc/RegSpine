@@ -1,0 +1,255 @@
+{
+  "_comment": "Synthetic golden set (10 cases) for evals/scorers/extraction_scorer.py. source_text is a synthetic clause (not copied verbatim from any real regulation text) written to be structurally realistic. Every expected_obligations[].verbatim_quote is an EXACT substring of that case's source_text -- this is the ground truth an extraction run is compared against, not something the model needs to reproduce exactly (fuzzy/normalized span matching still applies via src/verify/span.py). Each case also carries one applicability scenario (a bank_profile + expected_applies) so extraction and applicability can both be scored per case.",
+  "cases": [
+    {
+      "id": "GO-01",
+      "regulator": "DORA",
+      "source_text": "Financial entities shall report major ICT-related incidents to the competent authority within 24 hours of detection, using the standardised reporting template referred to in Article 20.",
+      "expected_obligations": [
+        {
+          "obligation_text": "Report major ICT-related incidents to the competent authority within 24 hours of detection",
+          "verbatim_quote": "shall report major ICT-related incidents to the competent authority within 24 hours of detection",
+          "modality": "must",
+          "mandatory": true,
+          "obligation_type": "reporting",
+          "deadline_spec": "24 hours of detection"
+        }
+      ],
+      "applicability": {
+        "bank_profile": {
+          "entity_name": "Meridian Bank Europe SE",
+          "jurisdiction": "EU",
+          "entity_tier": "regional",
+          "licences": ["ecb_credit_institution", "dora_financial_entity"],
+          "business_lines": ["retail_banking", "payments"]
+        },
+        "expected_applies": true
+      }
+    },
+    {
+      "id": "GO-02",
+      "regulator": "DORA",
+      "source_text": "Financial entities shall maintain and update at least annually a register of information on all contractual arrangements with ICT third-party service providers, distinguishing between arrangements supporting critical or important functions and those that do not.",
+      "expected_obligations": [
+        {
+          "obligation_text": "Maintain and update at least annually a register of information on ICT third-party contractual arrangements",
+          "verbatim_quote": "shall maintain and update at least annually a register of information on all contractual arrangements with ICT third-party service providers",
+          "modality": "must",
+          "mandatory": true,
+          "obligation_type": "governance",
+          "deadline_spec": "at least annually"
+        }
+      ],
+      "applicability": {
+        "bank_profile": {
+          "entity_name": "Meridian Bank Europe SE",
+          "jurisdiction": "EU",
+          "entity_tier": "regional",
+          "licences": ["ecb_credit_institution", "dora_financial_entity"],
+          "business_lines": ["retail_banking", "payments"]
+        },
+        "expected_applies": true
+      }
+    },
+    {
+      "id": "GO-03",
+      "regulator": "DORA",
+      "source_text": "Financial entities may, where proportionate to their size and overall risk profile, rely on pooled testing arrangements coordinated by a third party to satisfy the digital operational resilience testing programme requirement.",
+      "expected_obligations": [
+        {
+          "obligation_text": "May rely on pooled, third-party-coordinated testing arrangements to satisfy the resilience testing programme, where proportionate",
+          "verbatim_quote": "may, where proportionate to their size and overall risk profile, rely on pooled testing arrangements coordinated by a third party",
+          "modality": "may",
+          "mandatory": false,
+          "obligation_type": "governance",
+          "deadline_spec": null
+        }
+      ],
+      "applicability": {
+        "bank_profile": {
+          "entity_name": "Meridian Bank USA",
+          "jurisdiction": "US",
+          "entity_tier": "regional",
+          "licences": ["national_bank_charter"],
+          "business_lines": ["retail_banking", "consumer_lending"]
+        },
+        "expected_applies": false
+      }
+    },
+    {
+      "id": "GO-04",
+      "regulator": "DORA",
+      "source_text": "Financial entities shall establish, document, and periodically test an ICT business continuity policy setting out recovery time objectives and recovery point objectives for critical or important functions.",
+      "expected_obligations": [
+        {
+          "obligation_text": "Establish, document, and periodically test an ICT business continuity policy with defined RTOs/RPOs for critical functions",
+          "verbatim_quote": "shall establish, document, and periodically test an ICT business continuity policy setting out recovery time objectives and recovery point objectives",
+          "modality": "must",
+          "mandatory": true,
+          "obligation_type": "ict",
+          "deadline_spec": null
+        }
+      ],
+      "applicability": {
+        "bank_profile": {
+          "entity_name": "Meridian Bank Europe SE",
+          "jurisdiction": "EU",
+          "entity_tier": "regional",
+          "licences": ["ecb_credit_institution", "dora_financial_entity"],
+          "business_lines": ["retail_banking", "payments"]
+        },
+        "expected_applies": true
+      }
+    },
+    {
+      "id": "GO-05",
+      "regulator": "NIS2",
+      "source_text": "Essential and important entities shall submit an early warning to the competent CSIRT without undue delay and in any event within 24 hours of becoming aware of a significant incident, followed by a full incident notification within 72 hours.",
+      "expected_obligations": [
+        {
+          "obligation_text": "Submit an early warning within 24 hours and a full incident notification within 72 hours of becoming aware of a significant incident",
+          "verbatim_quote": "shall submit an early warning to the competent CSIRT without undue delay and in any event within 24 hours of becoming aware of a significant incident",
+          "modality": "must",
+          "mandatory": true,
+          "obligation_type": "reporting",
+          "deadline_spec": "24 hours, followed by 72 hours"
+        }
+      ],
+      "applicability": {
+        "bank_profile": {
+          "entity_name": "Meridian Bank Europe SE",
+          "jurisdiction": "EU",
+          "entity_tier": "regional",
+          "licences": ["ecb_credit_institution", "dora_financial_entity"],
+          "business_lines": ["retail_banking", "payments"]
+        },
+        "expected_applies": true
+      }
+    },
+    {
+      "id": "GO-06",
+      "regulator": "NIS2",
+      "source_text": "Essential and important entities shall implement appropriate and proportionate technical, operational, and organisational measures to manage the risks posed to the security of network and information systems, following an all-hazards approach.",
+      "expected_obligations": [
+        {
+          "obligation_text": "Implement proportionate technical, operational, and organisational risk-management measures following an all-hazards approach",
+          "verbatim_quote": "shall implement appropriate and proportionate technical, operational, and organisational measures to manage the risks posed to the security of network and information systems",
+          "modality": "must",
+          "mandatory": true,
+          "obligation_type": "governance",
+          "deadline_spec": null
+        }
+      ],
+      "applicability": {
+        "bank_profile": {
+          "entity_name": "Meridian Bank USA",
+          "jurisdiction": "US",
+          "entity_tier": "regional",
+          "licences": ["national_bank_charter"],
+          "business_lines": ["retail_banking", "consumer_lending"]
+        },
+        "expected_applies": false
+      }
+    },
+    {
+      "id": "GO-07",
+      "regulator": "NIS2",
+      "source_text": "Essential entities shall address supply chain security, including security-related aspects concerning the relationships between each entity and its direct suppliers or service providers, as part of their risk management measures.",
+      "expected_obligations": [
+        {
+          "obligation_text": "Address supply chain security in relationships with direct suppliers and service providers as part of risk management",
+          "verbatim_quote": "shall address supply chain security, including security-related aspects concerning the relationships between each entity and its direct suppliers or service providers",
+          "modality": "must",
+          "mandatory": true,
+          "obligation_type": "governance",
+          "deadline_spec": null
+        }
+      ],
+      "applicability": {
+        "bank_profile": {
+          "entity_name": "Meridian Bank Europe SE",
+          "jurisdiction": "EU",
+          "entity_tier": "regional",
+          "licences": ["ecb_credit_institution", "dora_financial_entity"],
+          "business_lines": ["retail_banking", "payments"]
+        },
+        "expected_applies": true
+      }
+    },
+    {
+      "id": "GO-08",
+      "regulator": "Basel III",
+      "source_text": "Banks must maintain a minimum Common Equity Tier 1 capital ratio of 4.5% of risk-weighted assets at all times, in addition to the capital conservation buffer.",
+      "expected_obligations": [
+        {
+          "obligation_text": "Maintain a minimum CET1 capital ratio of 4.5% of risk-weighted assets at all times",
+          "verbatim_quote": "must maintain a minimum Common Equity Tier 1 capital ratio of 4.5% of risk-weighted assets at all times",
+          "modality": "must",
+          "mandatory": true,
+          "obligation_type": "capital",
+          "deadline_spec": "at all times"
+        }
+      ],
+      "applicability": {
+        "bank_profile": {
+          "entity_name": "Meridian Bank USA",
+          "jurisdiction": "US",
+          "entity_tier": "regional",
+          "licences": ["national_bank_charter"],
+          "business_lines": ["retail_banking", "consumer_lending"]
+        },
+        "expected_applies": true
+      }
+    },
+    {
+      "id": "GO-09",
+      "regulator": "Basel III",
+      "source_text": "Banks must hold sufficient high-quality liquid assets to cover total net cash outflows over a 30 calendar-day liquidity stress scenario, maintaining a liquidity coverage ratio of at least 100%.",
+      "expected_obligations": [
+        {
+          "obligation_text": "Maintain a liquidity coverage ratio of at least 100% over a 30-day stress scenario",
+          "verbatim_quote": "must hold sufficient high-quality liquid assets to cover total net cash outflows over a 30 calendar-day liquidity stress scenario",
+          "modality": "must",
+          "mandatory": true,
+          "obligation_type": "capital",
+          "deadline_spec": "30 calendar-day stress scenario"
+        }
+      ],
+      "applicability": {
+        "bank_profile": {
+          "entity_name": "Meridian Bank USA",
+          "jurisdiction": "US",
+          "entity_tier": "regional",
+          "licences": ["national_bank_charter"],
+          "business_lines": ["retail_banking", "consumer_lending"]
+        },
+        "expected_applies": true
+      }
+    },
+    {
+      "id": "GO-10",
+      "regulator": "Basel III",
+      "source_text": "A bank's exposure to a single counterparty or group of connected counterparties must not exceed 25% of the bank's available Tier 1 capital, except where a specific exemption applies to exposures to sovereigns.",
+      "expected_obligations": [
+        {
+          "obligation_text": "Limit single-counterparty (or connected group) exposure to no more than 25% of available Tier 1 capital",
+          "verbatim_quote": "must not exceed 25% of the bank's available Tier 1 capital",
+          "modality": "must",
+          "mandatory": true,
+          "obligation_type": "capital",
+          "deadline_spec": null
+        }
+      ],
+      "applicability": {
+        "bank_profile": {
+          "entity_name": "Meridian Bank USA",
+          "jurisdiction": "US",
+          "entity_tier": "regional",
+          "licences": ["national_bank_charter"],
+          "business_lines": ["retail_banking", "consumer_lending"]
+        },
+        "expected_applies": true
+      }
+    }
+  ]
+}

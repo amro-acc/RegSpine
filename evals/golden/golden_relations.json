@@ -1,0 +1,50 @@
+{
+  "_comment": "Synthetic golden set (5 cases) for evals/scorers/relation_scorer.py (roadmap features 13/14, reopened 2026-09-29). Each case is one curated obligation pair spanning two of this project's declared corpus regulators (Basel III, DORA, PCI DSS) plus GDPR (used only as an illustrative conflicting-regime pair, not part of the declared F2/D2 corpus). Deliberately covers all four RelationType values plus the 'unrelated' default, one case each, so accuracy isn't inflated by an easy majority class.",
+  "cases": [
+    {
+      "id": "GR-01",
+      "obligation_a_regulator": "Basel III",
+      "obligation_a_text": "Financial institutions shall retain full transaction records for a minimum of ten years from the date of the transaction.",
+      "obligation_b_regulator": "GDPR",
+      "obligation_b_text": "Financial institutions shall erase personal data relating to a data subject no later than five years after the data subject's account is closed, upon request.",
+      "expected_relation_type": "conflicts_with",
+      "_note": "Timing/retention contradiction: a 10-year retention mandate directly conflicts with a 5-year deletion mandate for the same underlying data."
+    },
+    {
+      "id": "GR-02",
+      "obligation_a_regulator": "DORA",
+      "obligation_a_text": "Financial entities shall report major ICT-related incidents to the competent authority within 24 hours of detection.",
+      "obligation_b_regulator": "NIS2",
+      "obligation_b_text": "Essential entities shall submit an early warning to the competent CSIRT within 24 hours of becoming aware of a significant incident.",
+      "expected_relation_type": "overlaps",
+      "_note": "Scope overlap: both require reporting a major/significant incident to an authority within the same 24-hour window -- one control could go a long way toward satisfying both."
+    },
+    {
+      "id": "GR-03",
+      "obligation_a_regulator": "PCI DSS v3.2.1",
+      "obligation_a_text": "Merchants shall encrypt cardholder data using TLS 1.1 or higher for transmission over open, public networks.",
+      "obligation_b_regulator": "PCI DSS v4.0",
+      "obligation_b_text": "Merchants shall encrypt cardholder data using TLS 1.2 or higher for transmission over open, public networks, with support for TLS 1.1 removed entirely.",
+      "expected_relation_type": "supersedes",
+      "_note": "Same requirement (encrypt cardholder data in transit), same standard family, strictly tightened by the newer version."
+    },
+    {
+      "id": "GR-04",
+      "obligation_a_regulator": "Basel III",
+      "obligation_a_text": "Banks shall maintain a robust operational resilience capability commensurate with the nature, scale, and complexity of their operations.",
+      "obligation_b_regulator": "DORA",
+      "obligation_b_text": "Financial entities shall establish and maintain a documented ICT-related incident response and recovery plan detailing escalation procedures, roles, and communication channels.",
+      "expected_relation_type": "implements",
+      "_note": "DORA's specific, mechanism-level ICT incident response plan operationalizes Basel III's general, principle-level operational resilience requirement."
+    },
+    {
+      "id": "GR-05",
+      "obligation_a_regulator": "Basel III",
+      "obligation_a_text": "Banks shall maintain a minimum Common Equity Tier 1 (CET1) capital ratio of 4.5% of risk-weighted assets.",
+      "obligation_b_regulator": "PCI DSS v4.0",
+      "obligation_b_text": "Merchants shall install and maintain network security controls to protect all cardholder data environments.",
+      "expected_relation_type": "unrelated",
+      "_note": "Different subject matter entirely (capital adequacy vs. network security) -- the negative/decoy case, since ObligationRelationAgent.compare() returns None (not a fabricated relation) whenever the model correctly says 'unrelated'."
+    }
+  ]
+}
