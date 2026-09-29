@@ -1,0 +1,16 @@
+# Static bank profile used by the applicability agent to evaluate regulatory obligations.
+# 
+# Note: This is currently a file-based stand-in using synthetic data ("Meridian Bank USA"). 
+# Once the database is fully seeded, this should be replaced with a live lookup 
+# against the `bank_entities` table (where entity_id is supplied at runtime).
+
+entity_name: "Meridian Bank USA"
+jurisdiction: "US"
+entity_tier: "regional"          # Options: regional | community | systemically_important
+licences:
+  - national_bank_charter
+business_lines:
+  - retail_banking
+  - consumer_lending
+  # Note: Investment banking and trading are intentionally omitted here.
+  # This allows our applicability tests to verify that out-of-scope obligations are correctly filtered.
