@@ -1,16 +1,15 @@
-"""Integration test for Step 6: the full LangGraph orchestration
+"""Integration test for the full LangGraph orchestration
 (ingest -> applicability -> mapping -> audit -> judge -> remediation).
 
 Mocked at the network boundary only (src.llm.gemini_client.call /
 src.llm.openai_client.call — same convention as test_reasoning_agents.py)
-and at src.database.supabase_client's insert/update functions (kept
-hermetic per this step's explicit allowance: "Mock the Supabase network
-calls if necessary to keep the test hermetic, but ensure the graph
-executes"). ChromaDB, the reranker, span verification, risk scoring, and
-LangGraph's own state machine/checkpointer all run for real — this is the
-one thing this test actually exists to prove: the wiring between the
-DB-agnostic agents and the persistence layer, driven by real graph
-execution, not by asserting each piece in isolation again.
+and at src.database.supabase_client's insert/update functions, to keep the
+test hermetic while still letting the graph actually execute. ChromaDB,
+the reranker, span verification, risk scoring, and LangGraph's own state
+machine/checkpointer all run for real — this is the one thing this test
+actually exists to prove: the wiring between the DB-agnostic agents and
+the persistence layer, driven by real graph execution, not by asserting
+each piece in isolation again.
 """
 
 from __future__ import annotations

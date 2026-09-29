@@ -7,13 +7,11 @@ a later run — cached_llm_call() returns the hit and never calls call_fn() at
 all, so the mock's assertions on "was it called" fail even though the
 agent's real logic is fine.
 
-Found for real: two tests in tests/test_reasoning_agents.py passed when that
-file was run alone, then failed when the full suite ran afterward, because
-a stale cache entry from the earlier standalone run (same model/prompt/
-schema_version -> same cache key) served instead of hitting the fresh mock.
-This also retroactively covers tests/test_llm_gateway.py's manual
-reset_cache() calls, which only ever ran in its __main__ block and had no
-effect under pytest.
+We hit this for real: two tests in tests/test_reasoning_agents.py passed when
+that file was run alone, then failed when the full suite ran afterward,
+because a stale cache entry from the earlier standalone run (same model/
+prompt/schema_version -> same cache key) served instead of hitting the
+fresh mock.
 """
 
 from __future__ import annotations

@@ -1,5 +1,4 @@
-"""Verification tests for Step 7: the FastAPI application layer
-(src/api/main.py).
+"""Tests for the FastAPI application layer (src/api/main.py).
 
 Both the LangGraph invocation and every src.database.supabase_client call
 are mocked — this test is about the API's request/response contract and
@@ -150,8 +149,8 @@ def test_audit_endpoint_logs_full_exception_and_gives_friendly_detail_for_postgr
     must get its known SQLSTATE translated into a short plain-English
     sentence instead of reaching the browser as a raw {'message': ...,
     'code': ...} dict — and the full exception must be logged server-side
-    via logger.exception(), which was previously entirely missing (nothing
-    printed to the terminal on a pipeline failure)."""
+    via logger.exception() so pipeline failures actually show up in the
+    terminal."""
     entity_id = str(uuid.uuid4())
 
     class _FakeDuplicateKeyError(Exception):
@@ -319,14 +318,13 @@ def test_cors_middleware_allows_vite_dev_server_origin():
     assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
 
 
-# ============ /api/v1/changes/diff (feature 2, reopened from
-# docs/roadmap.md) — ChangeWatcherAgent itself is mocked here too, same
-# reasoning as the graph mock above: this proves the endpoint's wiring
-# (does it build valid RegulatoryObligation/ControlMapping objects from raw
-# Supabase rows? does it create the new version/clause chain? does it
-# persist what the agent returns? does it fail the run cleanly?), not the
-# agent's diff logic, which has its own tests
-# (test_change_watcher_agent.py). ============
+# ============ /api/v1/changes/diff — ChangeWatcherAgent itself is mocked
+# here too, same reasoning as the graph mock above: this proves the
+# endpoint's wiring (does it build valid RegulatoryObligation/
+# ControlMapping objects from raw Supabase rows? does it create the new
+# version/clause chain? does it persist what the agent returns? does it
+# fail the run cleanly?), not the agent's diff logic, which has its own
+# tests. ============
 
 from src.core.schemas import ChangeType, ClauseChange, Materiality  # noqa: E402
 
@@ -485,8 +483,7 @@ def test_change_diff_endpoint_marks_diff_run_failed_on_exception():
     assert mock_update_status.call_args.args[1] == "failed"
 
 
-# ============ /api/v1/obligations/relations (roadmap features 13/14,
-# reopened 2026-09-29) ============
+# ============ /api/v1/obligations/relations ============
 
 
 def test_obligation_relations_endpoint_returns_200_with_detected_relation():

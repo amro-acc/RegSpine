@@ -1,11 +1,11 @@
-"""Verification tests for Step 4: span verification, ingestion agent,
-applicability agent.
+"""Tests for span verification, the ingestion agent, and the applicability
+agent.
 
 Ingestion/applicability tests mock LLMGateway.call rather than hit a real
 model — these are testing agent logic (parsing, span verification wiring,
-filtering), not model quality. Sample text comes from corpus/ (the real
-dummy documents scripts/seed_chroma.py already indexes), per this task's own
-instruction, rather than inventing separate fixture text.
+filtering), not model quality. Sample text comes from corpus/ (the same
+dummy documents scripts/seed_chroma.py indexes) rather than inventing
+separate fixture text.
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ DUMMY_REGULATION_TEXT = (REPO_ROOT / "corpus" / "regulations" / "dummy_regulatio
 DUMMY_POLICY_TEXT = (REPO_ROOT / "corpus" / "bank" / "dummy_policy.txt").read_text(encoding="utf-8")
 
 
-# ============ 5a. Span verification ============
+# ============ Span verification ============
 
 
 def test_span_verification_passes_on_verbatim_quote():
@@ -49,7 +49,7 @@ def test_span_verification_fails_on_hallucinated_quote():
     assert result["method"] == "none"
 
 
-# ============ 5b. Ingestion agent ============
+# ============ Ingestion agent ============
 
 
 class _FakeGateway:
@@ -176,7 +176,7 @@ def test_ingestion_extracts_controls_from_policy_text():
     assert control.provenance.source_file == "dummy_policy.txt"
 
 
-# ============ 5c. Applicability agent ============
+# ============ Applicability agent ============
 
 
 def test_applicability_filters_out_of_scope_obligation():

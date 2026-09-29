@@ -1,5 +1,5 @@
-"""Verification tests for Step 3: vector store (Chroma + reranker) and the
-Supabase CRUD layer.
+"""Tests for the vector store (Chroma + reranker) and the Supabase CRUD
+layer.
 
 Chroma tests use a disposable, uniquely-named collection (not the real
 `regulatory_obligations`/`internal_controls` collections seeded by
@@ -7,10 +7,9 @@ scripts/seed_chroma.py) so running the test suite never mutates the real
 local index, and clean up after themselves.
 
 The Supabase test is skipped (not failed) when SUPABASE_URL/
-SUPABASE_SERVICE_KEY aren't set — per this task's own "skip if running
-offline/mock mode" instruction — rather than silently mocking the client,
+SUPABASE_SERVICE_KEY aren't set, rather than silently mocking the client,
 since a mocked Supabase client wouldn't actually verify anything about the
-live schema (Step 3's insert functions rely on real column names matching).
+live schema (the insert functions rely on real column names matching).
 """
 
 from __future__ import annotations

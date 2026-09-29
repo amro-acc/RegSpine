@@ -1,6 +1,5 @@
-"""Verification tests for src/agents/obligation_relation_agent.py (roadmap
-features 13/14, reopened 2026-09-29). Mocks only at the network-client
-boundary (src.llm.openai_client.call), same convention as
+"""Tests for src/agents/obligation_relation_agent.py. Mocks only at the
+network-client boundary (src.llm.openai_client.call), same convention as
 tests/test_reasoning_agents.py.
 """
 

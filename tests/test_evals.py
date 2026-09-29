@@ -1,13 +1,11 @@
-"""Gates on the D2 quantitative-reliability claims (evals/run_benchmarks.py's
-output), rather than re-running the eval suite live inside pytest -- keeps
-this test hermetic/fast/deterministic like every other test in tests/, and
-matches this repo's own "CI asserts the manifest hash" convention (spec.md
-§14.2): a precomputed artifact is checked, not regenerated on every test run.
+"""Gates on evals/run_benchmarks.py's quantitative-reliability output,
+rather than re-running the eval suite live inside pytest -- keeps this
+test hermetic/fast/deterministic like every other test in tests/: a
+precomputed artifact is checked, not regenerated on every test run.
 
-Fails loudly (not skips) if evals/results.json doesn't exist yet -- an absent
-eval result is not the same as a passing one, and this repo's own convention
-(CLAUDE.md: "Do not silently drop") treats a missing declared gate as
-something to surface, not quietly skip past.
+Fails loudly (not skips) if evals/results.json doesn't exist yet -- an
+absent eval result is not the same as a passing one, so a missing gate
+should surface as a failure, not get quietly skipped past.
 """
 
 from __future__ import annotations

@@ -1,5 +1,5 @@
-"""Verification tests for the (reopened) feature 2 change_watcher agent
-(src/agents/change_watcher_agent.py). Mocks only at the network-client
+"""Tests for the change_watcher agent (src/agents/change_watcher_agent.py).
+Mocks only at the network-client
 boundary (src.llm.gemini_client.call / src.llm.openai_client.call), same
 convention as tests/test_reasoning_agents.py — this proves the real
 LLMGateway resolves both EXTRACTOR (added-region extraction) and REASONER
@@ -139,8 +139,7 @@ def test_diff_classifies_amended_region_and_flags_broken_control():
     }]})}
     # Deterministic re-check of the AMENDED obligation against its EXISTING
     # mapped control (coverage_level=FULL from _make_mapping, so gap_class is
-    # model-driven here, not deterministic — spec.md hard invariant #3 only
-    # forces gap_class for NONE/PARTIAL coverage).
+    # model-driven here — gap_class is only forced for NONE/PARTIAL coverage).
     amended_audit_response = {"content": json.dumps({
         "has_gap": True, "gap_class": "control_ineffective",
         "narrative": "Escalation control's 48h window cannot satisfy the tightened 12h reporting deadline",

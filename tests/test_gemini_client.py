@@ -1,6 +1,6 @@
-"""Verification tests for src/llm/gemini_client.py's multi-key rotation
-(2026-09-28): GOOGLE_API_KEY may hold a comma-separated list of keys, each
-with its own independent Google free-tier daily quota. Mocks
+"""Tests for src/llm/gemini_client.py's multi-key rotation: GOOGLE_API_KEY
+may hold a comma-separated list of keys, each with its own independent
+Google free-tier daily quota. Mocks
 google.genai.Client itself (the network boundary) so no real API calls
 happen; a plain exception with .code/.status attributes stands in for the
 real google.genai.errors.ClientError/ServerError shapes, since

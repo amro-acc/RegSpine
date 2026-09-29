@@ -1,10 +1,10 @@
-"""Verification tests for Step 5: mapping, audit, and judge agents.
+"""Tests for the mapping, audit, and judge agents.
 
-Unlike Step 4's tests (which mocked at the agent's gateway.call() boundary),
-these use REAL LLMGateway instances with mocks only at the network-client
-boundary (src.llm.gemini_client.call / src.llm.openai_client.call) — the
-only way to actually verify the gateway resolved the correct model string
-per role, which this task explicitly asks for.
+Unlike test_ingestion_applicability.py's tests (which mocked at the agent's
+gateway.call() boundary), these use REAL LLMGateway instances with mocks
+only at the network-client boundary (src.llm.gemini_client.call /
+src.llm.openai_client.call) — the only way to actually verify the gateway
+resolved the correct model string per role.
 """
 
 from __future__ import annotations
