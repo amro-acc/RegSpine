@@ -1,7 +1,6 @@
-DUMMY SAMPLE REGULATION — synthetic text for pipeline testing only.
-This is not a real regulatory document. Used to exercise ingestion,
-embedding, and retrieval before the real Basel/DORA/PCI DSS corpus is
-acquired (spec.md §13.1, still pending as of this step).
+DUMMY SAMPLE REGULATION — placeholder text for pipeline testing only.
+Not a real regulatory document. Swap in the real Basel/DORA/PCI DSS corpus
+text here once it's available.
 
 Art. 1 — Incident reporting
 A regulated entity must report any material operational incident to the
