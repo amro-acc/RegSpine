@@ -1,6 +1,6 @@
 # Tech Stack & Architectural Decisions
 
-This document outlines the core technologies powering **RegAgentX**, detailing why each tool was chosen, key architectural tradeoffs, and expected operating costs.
+This document outlines the core technologies powering **RegSpine**, detailing why each tool was chosen, key architectural tradeoffs, and expected operating costs.
 
 ---
 
