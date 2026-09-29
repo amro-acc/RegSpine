@@ -1,17 +1,15 @@
 """Rebuild the Chroma index from corpus/ and update corpus/manifest.json.
 
-This is the `make index` step (CLAUDE.md §2: "rebuild Chroma from corpus/
-(deterministic; ~2 min CPU)"). Deterministic in the sense that the same
-corpus files always produce the same manifest hashes and the same collection
-contents — re-running this is how every developer gets an identical local
-index without committing the binary chroma_db/ directory (spec.md §14.2).
+This is the `make index` step. It's deterministic: the same corpus files
+always produce the same manifest hashes and the same collection contents,
+so re-running this is how every developer gets an identical local index
+without committing the binary chroma_db/ directory.
 
 Scope note: seeds two small SYNTHETIC documents (corpus/regulations/
 dummy_regulation.txt, corpus/bank/dummy_policy.txt) — the real Basel/DORA/
-PCI DSS corpus and Meridian bank artifacts (spec.md §13.1/§13.2) haven't been
-acquired yet. Whole-file-as-one-chunk for now; real clause segmentation
-(spec.md §7.2.3) isn't built yet either — each dummy file becomes exactly one
-Chroma document.
+PCI DSS corpus and Meridian bank artifacts haven't been acquired yet.
+Whole-file-as-one-chunk for now; real clause segmentation isn't built yet
+either, so each dummy file becomes exactly one Chroma document.
 
 Usage:
     python scripts/seed_chroma.py

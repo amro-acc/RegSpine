@@ -5,10 +5,6 @@ run repeatedly — only files not yet recorded get applied. Each migration
 still runs in its own transaction and rolls back cleanly on error; a failed
 migration is not recorded as applied.
 
-This replaces the earlier single-file version (hardcoded to 001_init.sql),
-which explicitly flagged this exact limitation in its own docstring before a
-002_*.sql actually existed.
-
 Usage:
     python scripts/apply_schema.py
 """
@@ -46,8 +42,8 @@ def _already_applied(conn) -> set[str]:
 
 
 def _bootstrap_pre_tracking_migration(conn) -> None:
-    """One-time transitional shim: 001_init.sql was applied (Step 2) before
-    this schema_migrations table existed. Without this, a fresh run would try
+    """001_init.sql was applied to some databases before this
+    schema_migrations table existed. Without this, a fresh run would try
     to re-execute 001 and fail on "relation already exists." If the tracking
     table is empty but the tables 001 creates are already present, backfill a
     row for it instead of re-running it."""
