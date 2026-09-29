@@ -1,0 +1,38 @@
+# Role-based model configuration. 
+# Code must reference models by role (extractor, reasoner, etc.), never by literal ID.
+
+extractor:
+  provider: openai
+  model: gpt-5.1
+  # Minimal effort used here to keep bulk extraction fast and cost-effective.
+  reasoning_effort: minimal
+
+summarizer:
+  provider: openai
+  model: gpt-5.1
+  reasoning_effort: minimal
+
+reasoner:
+  provider: openai
+  model: gpt-5.1
+  # Note: Double-check if the SDK requires `reasoning_effort` or `temperature` for this specific model version.
+  reasoning_effort: medium
+
+reasoner_fallback:
+  provider: openai
+  model: gpt-5.6-luna
+  reasoning_effort: medium
+  # Fallback outputs are always routed to human-in-the-loop (HITL) review.
+  # This is enforced in the API gateway logic, documented here for visibility.
+  never_auto_accept: true
+
+judge_pool:
+  # Independent reviewer pool. Kept on the Flash tier to stay within reliable quota limits.
+  # Leaving temperature unset to use the default (1.0), which is recommended for reasoning tasks.
+  provider: google
+  model: gemini-3.8-flash
+
+judge:
+  # Dynamically resolved at call time by ModelGateway.
+  # Ensures the evaluating model is always from a different provider family than the producing model.
+  policy: different_family_from_producer
