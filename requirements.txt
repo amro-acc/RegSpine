@@ -1,0 +1,35 @@
+# Orchestration
+langgraph>=1.2.0
+langgraph-checkpoint-sqlite
+langchain>=0.3.0
+langchain-openai
+langchain-google-genai
+
+# Structured data / schemas
+pydantic>=2.7.0
+
+# Retrieval & Embeddings
+chromadb>=0.5.0
+sentence-transformers>=3.0.0
+FlagEmbedding
+
+# Document Ingestion
+PyMuPDF
+pdfplumber
+openpyxl
+
+# Data Layer
+supabase>=2.4.0
+psycopg2-binary    # Required for raw Postgres connections and schema migrations
+
+# Backend API
+fastapi>=0.111.0
+uvicorn
+httpx              # Required for FastAPI TestClient
+
+# Config & Environment
+pyyaml
+python-dotenv
+
+# Testing
+pytest
