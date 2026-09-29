@@ -1,0 +1,36 @@
+# Pipeline configuration for thresholds, retrieval settings, and cost limits.
+# All system-wide tunable parameters and numeric thresholds should be defined here.
+
+retrieval:
+  top_k_initial: 25       # Number of candidates to embed and retrieve initially
+  top_k_reranked: 8       # Number of candidates remaining after passing through the cross-encoder
+
+chroma:
+  # Local directory for ChromaDB persistence. 
+  # Rebuilt deterministically via ingestion scripts; should not be committed to version control.
+  persist_directory: chroma_db
+  embedding_model: sentence-transformers/all-MiniLM-L6-v2
+  reranker_model: BAAI/bge-reranker-base
+
+span_verifier:
+  fuzzy_floor: 0.97       # Deliberately tight; absorbs PDF text-layer extraction noise (e.g., hyphenation/line-wraps) without allowing paraphrasing.
+
+mapping:
+  full_coverage_confidence_floor: 0.75
+  # "Full" coverage mappings with a confidence score below this threshold are downgraded to "partial" and queued for review.
+
+confidence_bands:
+  auto_accept: 0.85       # Scores >= this threshold are automatically accepted and logged.
+  proposed_floor: 0.60    # Scores between 0.60 and 0.85 are accepted as 'proposed' and flagged in the UI.
+  # Scores below proposed_floor are sent to the HITL (Human-in-the-Loop) queue and excluded from headline outputs until reviewed.
+  #
+  # Note: These thresholds do not apply to fallback model outputs. 
+  # Fallback paths are always forced to 'proposed' and routed to HITL regardless of confidence.
+
+retries:
+  max_repair_retries: 2           # Allowed retries for structured-output schema repair
+  max_span_reextract_retries: 2   # Allowed retries for narrowed re-extraction upon span-verifier rejection
+  max_critic_loop_retries: 1      # Allowed revision loops from the auditor_critic back to the producing node
+
+budget:
+  run_budget_usd: 0.50            # Per-run cost cap enforced by ModelGateway. Exceeding this degrades the pipeline to extraction-only.
