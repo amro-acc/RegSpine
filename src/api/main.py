@@ -1,32 +1,29 @@
-"""FastAPI application layer (Step 7) — the HTTP boundary in front of the
-LangGraph orchestration (state_graph.py, Step 6) and the Supabase
-persistence layer (supabase_client.py).
+"""FastAPI application layer — the HTTP boundary in front of the LangGraph
+orchestration (state_graph.py) and the Supabase persistence layer
+(supabase_client.py).
 
-CRITICAL: CORSMiddleware explicitly allows the Vite dev server origin
-(http://localhost:5173) — spec.md §14.1.2 / CLAUDE.md §8: the React SPA is
-a browser process and must never hold SUPABASE_SERVICE_KEY; it talks to
-this API only, so this is the one place that needs a CORS allowance for it.
+CORSMiddleware explicitly allows the Vite dev server origin
+(http://localhost:5173): the React SPA is a browser process and must never
+hold SUPABASE_SERVICE_KEY, so it talks to this API only, and this is the
+one place that needs a CORS allowance for it.
 
-This module is also the first real "caller" of state_graph.py's compiled
-graph outside a test. Steps 4-6 all treated clause_id/bank_id/entity_id/
-run_id as pre-existing, caller-supplied ids (state_graph.py's own module
-docstring says this graph does not create Run/Clause/BankEntity
-scaffolding). POST /api/v1/audit is that caller: it creates the run row
-and an ad-hoc RegulatoryDocument -> DocumentVersion -> Clause chain so
-API-submitted regulation_text has somewhere to attach to, since no batch
-ingestion/clause_segmenter step runs ahead of an API request.
+This module is the real "caller" of state_graph.py's compiled graph outside
+a test. clause_id/bank_id/entity_id/run_id are treated as pre-existing,
+caller-supplied ids (state_graph.py's own module docstring says this graph
+does not create Run/Clause/BankEntity scaffolding). POST /api/v1/audit is
+that caller: it creates the run row and an ad-hoc RegulatoryDocument ->
+DocumentVersion -> Clause chain so API-submitted regulation_text has
+somewhere to attach to, since no batch ingestion/clause_segmenter step runs
+ahead of an API request.
 
 `bank_profile_id` is resolved to a real `bank_entities` row (to satisfy the
 entity_id FK on ObligationApplicability); applicability_node
 (state_graph.py) fetches that same row and passes its actual
 jurisdiction/licences/product_lines into ApplicabilityAgent, so selecting a
-different bank_profile_id now also changes what profile content the model
-reasons over, not just which entity the output is tagged against. This
-was flagged as a known gap until it was fixed — reproduced live: DORA was
-being dropped for a newly-seeded EU bank because the agent was still
-reasoning over a different, hardcoded US bank's profile regardless of which
-entity was selected. `config/bank_profile.yaml` remains the fallback only
-if a bank_entities row is somehow missing.
+different bank_profile_id also changes what profile content the model
+reasons over, not just which entity the output is tagged against.
+`config/bank_profile.yaml` remains the fallback only if a bank_entities row
+is somehow missing.
 """
 
 from __future__ import annotations
@@ -61,11 +58,10 @@ from src.database import supabase_client
 
 # src.database.supabase_client.get_client() reads SUPABASE_URL/
 # SUPABASE_SERVICE_KEY from os.environ lazily, at first request time, not at
-# import time — but nothing in this process was loading .env at all before
-# this. `make api`/`uvicorn src.api.main:app` only worked previously because
-# those vars happened to already be exported as real shell environment
-# variables. scripts/apply_schema.py already does this same load_dotenv
-# call, for exactly the same reason.
+# import time — this loads .env explicitly rather than relying on those vars
+# already being exported as real shell environment variables.
+# scripts/apply_schema.py does the same load_dotenv call, for the same
+# reason.
 load_dotenv(Path(__file__).resolve().parent.parent.parent / ".env")
 
 # Common Postgres SQLSTATE codes (postgrest.exceptions.APIError.code) worth
@@ -146,7 +142,7 @@ def _friendly_client_message(exc: Exception) -> str:
     return "The compliance audit pipeline encountered an unexpected error. See the server terminal for full details."
 
 
-app = FastAPI(title="RegAgentX API")
+app = FastAPI(title="RegSpine API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -299,7 +295,7 @@ def _create_new_version_for_diff(
     like _create_ad_hoc_clause) — this genuinely is meant to be read as "a
     new version of that same regulation," which from/to_version_id on
     ClauseChange only make sense as a pair if both sides trace back to one
-    document (see feature 2 in docs/roadmap.md)."""
+    document."""
     version = DocumentVersion(
         document_id=document_id,
         version_label=f"diff-{diff_run_id}",
@@ -319,8 +315,7 @@ def _create_new_version_for_diff(
 
 @app.post("/api/v1/changes/diff", response_model=ChangeDiffResponse)
 def diff_regulatory_change(payload: ChangeDiffRequest) -> ChangeDiffResponse:
-    """Feature 2 (spec.md §7.2.11), reopened from docs/roadmap.md's cut list.
-    Diffs `new_regulation_text` against the regulation text of a prior,
+    """Diffs `new_regulation_text` against the regulation text of a prior,
     already-audited run: classifies each changed region as added/removed/
     amended, judges materiality on amended regions that overlap an existing
     tracked obligation, and flags whether the change plausibly breaks the
@@ -420,8 +415,8 @@ def diff_regulatory_change(payload: ChangeDiffRequest) -> ChangeDiffResponse:
     )
 
 
-# ============ Obligation relations (roadmap features 13/14, reopened
-# 2026-09-29 — src/agents/obligation_relation_agent.py's module docstring
+# ============ Obligation relations — cross-regulation overlap/conflict
+# detection (src/agents/obligation_relation_agent.py's module docstring
 # explains why both are one feature apart). `regulator` is caller-supplied
 # per run rather than resolved via a multi-table join (obligation -> clause
 # -> document_version -> regulatory_document) — the caller (a human who just
@@ -506,12 +501,12 @@ def find_obligation_relations(payload: ObligationRelationsRequest) -> Obligation
 
 @app.get("/api/v1/lineage/{run_id}")
 def get_lineage(run_id: str) -> dict:
-    """Structured JSON hierarchy for the traceability graph (spec.md §12.3):
-    Obligations -> Mappings (with nested Control) / Gaps (with nested
-    Remediations). Keyed by obligation_id throughout, not control_id — gaps
-    have no control_id field (schemas.py's GapFinding docstring); the link
-    from a gap back to a control goes through the ControlMapping for the
-    same obligation, matching state_graph.py's own resolution pattern."""
+    """Structured JSON hierarchy for the traceability graph: Obligations ->
+    Mappings (with nested Control) / Gaps (with nested Remediations). Keyed
+    by obligation_id throughout, not control_id — gaps have no control_id
+    field (schemas.py's GapFinding docstring); the link from a gap back to a
+    control goes through the ControlMapping for the same obligation,
+    matching state_graph.py's own resolution pattern."""
     try:
         run_uuid = uuid.UUID(run_id)
     except ValueError as exc:

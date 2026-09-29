@@ -1,34 +1,30 @@
 """ChangeWatcherAgent: detects and classifies textual changes between two
 versions of the same regulatory document, and judges whether an amended
-clause breaks a previously-mapped control (spec.md §7.2.11 — feature 2,
-"Regulatory Change Intelligence"). Reopened from `docs/roadmap.md`'s cut
-list at the user's request; scoped down from full spec fidelity below.
+clause breaks a previously-mapped control.
 
-Scope note: spec.md §7.2.11 wants clause_ref-level alignment (with an
-embedding-similarity fallback for renumbered clauses). The live pipeline has
-no `clause_segmenter` (spec.md §7.2.3) — every run's regulation text is one
-ad-hoc `Clause` blob (`src/api/main.py`'s `_create_ad_hoc_clause`), not real
-per-article clauses with distinct `clause_ref` values. This agent instead
-diffs at sentence granularity *within* that single blob, using `difflib`
-deterministically first (matches spec's own "editorial reflows dominate;
-diff first, model only on genuine textual change" reasoning) and only calls
-REASONER for materiality/breaks-control judgement on the subset of regions
-that (a) survive the deterministic editorial filter and (b) overlap an
-existing tracked obligation's cited source span. Renumbered-clause alignment
-is not attempted — meaningless without real `clause_ref` segmentation.
+Scope note: ideally we'd want clause_ref-level alignment (with an
+embedding-similarity fallback for renumbered clauses), but there's no
+clause_segmenter yet — every run's regulation text is one ad-hoc `Clause`
+blob (`src/api/main.py`'s `_create_ad_hoc_clause`), not real per-article
+clauses with distinct `clause_ref` values. This agent instead diffs at
+sentence granularity *within* that single blob, using `difflib`
+deterministically first (editorial reflows dominate; diff first, model only
+on genuine textual change) and only calls REASONER for materiality/
+breaks-control judgement on the subset of regions that (a) survive the
+deterministic editorial filter and (b) overlap an existing tracked
+obligation's cited source span. Renumbered-clause alignment isn't
+attempted — it's meaningless without real clause_ref segmentation.
 
-Per spec.md §7.2.11's process description, only `amended` regions get a
-model materiality call; `added`/`removed` classification is deterministic.
-For `added` regions this agent additionally delegates to `IngestionAgent`
-(the same extractor real ingestion uses) to answer "is there a new binding
-obligation in this text at all" — a deliberate extension beyond the literal
-spec text, because "identify newly added obligations" is exactly what the
-user asked this feature to do.
+Only `amended` regions get a model materiality call; `added`/`removed`
+classification is deterministic. For `added` regions this agent also
+delegates to `IngestionAgent` (the same extractor real ingestion uses) to
+answer "is there a new binding obligation in this text at all" — identifying
+newly added obligations, not just describing the diff.
 
-Delta gap detection (2026-09-28): beyond classifying *that* something changed,
-this agent now answers "does the change actually break coverage" the same
-deterministic way the main pipeline does, instead of trusting only the
-change-watcher prompt's qualitative `breaks_control` narrative flag:
+Beyond classifying *that* something changed, this agent also answers "does
+the change actually break coverage" the same deterministic way the main
+pipeline does, instead of trusting only the change-watcher prompt's
+qualitative `breaks_control` narrative flag:
   - `amended` regions with a tracked obligation reuse `AuditAgent` against
     that obligation's *existing* mapped control, with the obligation's text
     swapped to the new clause wording — same "does this control still
@@ -103,9 +99,9 @@ class DiffRegion:
 
 
 def find_diff_regions(old_text: str, new_text: str) -> list[DiffRegion]:
-    """Deterministic, no model call (spec.md §7.2.11: "deterministic diff
-    first, model only on genuine textual change"). Splits both texts into
-    sentences, diffs at that granularity via `difflib`, drops opcodes whose
+    """Deterministic, no model call — diff first, model only on genuine
+    textual change. Splits both texts into sentences, diffs at that
+    granularity via `difflib`, drops opcodes whose
     old/new sides are identical once whitespace/case-normalized (pure
     editorial reflow), then re-locates each surviving region's old-side text
     back to a real character span in `old_text` using the same
@@ -227,9 +223,8 @@ class ChangeWatcherAgent:
         """Same question a first-time ingestion run asks: does any existing
         control cover this obligation? MappingAgent picks (or fails to pick)
         a candidate from `existing_controls`; AuditAgent turns that into a
-        real GapFinding, deterministic gap_class included (hard invariant
-        #3 — no_control/partial_coverage come from coverage_level in code,
-        not the model)."""
+        real GapFinding, deterministic gap_class included (no_control/
+        partial_coverage come from coverage_level in code, not the model)."""
         mapping = self.mapping_agent.map(obligation, existing_controls, run_id)
         control = None
         if mapping is not None:
@@ -379,10 +374,10 @@ class ChangeWatcherAgent:
                 mapping = mappings_by_obligation_id.get(obligation.id)
                 assessment = self.assess_amended_region(region.old_text, region.new_text, obligation, control, mapping)
 
-                # Deterministic re-check (spec.md §7.2.10's own gap-detection
-                # path), not just the change-watcher prompt's qualitative
-                # breaks_control flag: does the *existing* mapped control
-                # still satisfy the *amended* wording of this obligation?
+                # Deterministic re-check, not just the change-watcher
+                # prompt's qualitative breaks_control flag: does the
+                # *existing* mapped control still satisfy the *amended*
+                # wording of this obligation?
                 amended_obligation = obligation.model_copy(
                     update={"obligation_text": region.new_text, "verbatim_quote": region.new_text}
                 )

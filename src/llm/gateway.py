@@ -1,21 +1,19 @@
-"""ModelGateway: role-based routing, response caching, the REASONER fallback
-policy, and JUDGE model-family independence (spec.md §7.1, §7.1.1; CLAUDE.md
-hard invariants #6, #8, #10).
+"""LLMGateway: role-based routing, response caching, the REASONER fallback
+policy, and JUDGE model-family independence.
 
-Retry/backoff (spec.md §9.2's typed retry ladder, previously deferred): every
-live provider call is wrapped in `_call_with_retry` — transient 429/503
-errors get bounded exponential backoff + jitter before giving up. This is
-what was missing when gemini-3.8-flash's real capacity throttling turned one
+Every live provider call is wrapped in `_call_with_retry` — transient
+429/503 errors get bounded exponential backoff + jitter before giving up.
+Without this, gemini-3.8-flash's real capacity throttling turned one
 transient 503 into an instant, unrecoverable run failure.
 
-Deliberately not in scope for this step (flagged, not silently skipped):
-  - Per-run cost cap / budget enforcement (spec.md §9.4).
-  - Persisting LLMCall rows to Postgres — src/database/ (the data-access
-    layer) isn't built yet. Calls are logged via the standard `logging`
-    module for now; wiring to a real LLMCall insert is a later step.
-  - Degrading to `proposed` + HITL after retries are exhausted (spec.md
-    §9.2's other half) — that decision needs schema-specific knowledge only
-    the calling agent has, so it belongs at the node/agent level, not here.
+Not handled here (deliberately, not an oversight):
+  - Per-run cost cap / budget enforcement.
+  - Persisting LLMCall rows to Postgres — the data-access layer for that
+    isn't built yet. Calls are logged via the standard `logging` module for
+    now.
+  - Degrading to `proposed` + HITL after retries are exhausted — that
+    decision needs schema-specific knowledge only the calling agent has, so
+    it belongs at the node/agent level, not here.
 """
 
 from __future__ import annotations
@@ -66,8 +64,8 @@ def _call_with_retry(call_fn):
 
 class LLMGateway:
     """Route by role (EXTRACTOR | SUMMARIZER | REASONER), never by a literal
-    model string in calling code (hard invariant #8) — model IDs are read
-    from config/models.yaml here, and only here."""
+    model string in calling code — model IDs are read from config/models.yaml
+    here, and only here."""
 
     def __init__(self, config_path: Path | str = DEFAULT_CONFIG_PATH):
         with open(config_path, encoding="utf-8") as f:
@@ -85,18 +83,18 @@ class LLMGateway:
         if role == "judge":
             if producer_model is None:
                 raise ValueError(
-                    "role='judge' requires producer_model — hard invariant #6 needs to "
-                    "know what it must differ from; there is no fixed judge model to fall "
+                    "role='judge' requires producer_model — the gateway needs to know "
+                    "what model to differ from; there is no fixed judge model to fall "
                     "back on."
                 )
             judge_cfg = self._resolve_judge_model(producer_model)
             result = self._invoke(judge_cfg, prompt, schema_version)
-            # Added so judge_agent.py can log which model actually judged a
-            # finding (review_actions audit trail) without re-deriving the
+            # Lets judge_agent.py log which model actually judged a finding
+            # (review_actions audit trail) without re-deriving the
             # resolution itself — same "enrich the returned dict" pattern
-            # already used below for the reasoner-fallback path's
-            # status/hitl_required. Not cached: added after _invoke() returns,
-            # same as that path.
+            # used below for the reasoner-fallback path's status/
+            # hitl_required. Not cached: added after _invoke() returns, same
+            # as that path.
             result["model_id"] = judge_cfg["model"]
             self._log_call(role=role, model_id=judge_cfg["model"], fallback_used=False)
             return result
@@ -112,9 +110,9 @@ class LLMGateway:
             return result
         except Exception as primary_error:  # noqa: BLE001 - intentionally broad: any primary failure triggers fallback logic below
             if role != "reasoner":
-                # No configured fallback model for this role (spec.md §15) —
-                # the generic retry/degrade ladder belongs in state_graph.py,
-                # not here. Re-raise rather than pretend to handle it.
+                # No configured fallback model for this role — the generic
+                # retry/degrade ladder belongs in state_graph.py, not here.
+                # Re-raise rather than pretend to handle it.
                 raise
 
             fallback_cfg = self.config.get("reasoner_fallback")
@@ -129,9 +127,9 @@ class LLMGateway:
 
             result = self._invoke(fallback_cfg, prompt, schema_version)
 
-            # Hard invariant #10: fallback output never auto-accepts, at any
-            # confidence. Forced here, unconditionally — not a suggestion the
-            # caller can override.
+            # Fallback output never auto-accepts, at any confidence. Forced
+            # here, unconditionally — not a suggestion the caller can
+            # override.
             result["status"] = "proposed"
             result["hitl_required"] = True
 
@@ -153,10 +151,10 @@ class LLMGateway:
                 return openai_client.call(model, prompt, reasoning_effort=model_cfg.get("reasoning_effort"))
             raise ValueError(f"Unknown provider '{provider}' in config/models.yaml")
 
-        # Every call passes through the cache — the point of this class
-        # (spec.md §9.4: zero-cost dev iteration, instant offline demo replay).
-        # Retry only wraps the live call_fn, so cache hits never pay the
-        # backoff cost and only real API calls get the transient-error ladder.
+        # Every call passes through the cache — the point of this class is
+        # zero-cost dev iteration and instant offline demo replay. Retry
+        # only wraps the live call_fn, so cache hits never pay the backoff
+        # cost and only real API calls get the transient-error ladder.
         return cached_llm_call(
             model_name=model,
             prompt=prompt,
@@ -177,10 +175,9 @@ class LLMGateway:
         )
 
     def _resolve_judge_model(self, producer_model: str) -> dict:
-        """Hard invariant #6, resolved dynamically per spec.md §7.1's own
-        framing ("ModelGateway resolves this dynamically at call time, it is
-        not a fixed pin") — not a hardcoded model string, so this keeps
-        working correctly if config/models.yaml's roles ever change."""
+        """Resolved dynamically at call time, not a hardcoded model string,
+        so this keeps working correctly if config/models.yaml's roles ever
+        change."""
         producer_provider = self._provider_for_model(producer_model)
         for candidate_role in ("judge_pool", "extractor", "reasoner"):
             candidate_cfg = self.config.get(candidate_role)
@@ -188,5 +185,5 @@ class LLMGateway:
                 return candidate_cfg
         raise RuntimeError(
             f"no configured model family differs from producer '{producer_model}' — "
-            "hard invariant #6 cannot be satisfied with the current config/models.yaml"
+            "judge independence cannot be satisfied with the current config/models.yaml"
         )

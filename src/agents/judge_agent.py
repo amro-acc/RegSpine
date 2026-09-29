@@ -1,31 +1,29 @@
-"""JudgeAgent: independent review of a GapFinding (spec.md §7.2.15, hard
-invariant #6).
+"""JudgeAgent: independent review of a GapFinding.
 
-CRITICAL per this step's instructions: model-family independence from
-AuditAgent is enforced by LLMGateway's dynamic judge resolution (Step 5's
-gateway.py update), not by hardcoding "gemini-3.8-flash" here — the producer
-model is read directly from `gap_finding.model_id` (the artifact already
-carries who made it; no separate parameter needed to know that), and the
-gateway picks whichever configured model is a different provider family.
-With the current two-family config (Google, OpenAI) this resolves to Gemini
-when AuditAgent's producer was GPT-5.1, which is what was asked for — but
-arrived at generically, so it stays correct if the config ever changes.
+Model-family independence from AuditAgent is enforced by LLMGateway's
+dynamic judge resolution, not by hardcoding "gemini-3.8-flash" here — the
+producer model is read directly from `gap_finding.model_id` (the artifact
+already carries who made it; no separate parameter needed to know that),
+and the gateway picks whichever configured model is a different provider
+family. With the current two-family config (Google, OpenAI) this resolves
+to Gemini when AuditAgent's producer was GPT-5.1 — but it's arrived at
+generically, so it stays correct if the config ever changes.
 
 Returns an adjusted copy of the GapFinding (severity/status only — a judge
 cannot change gap_class or risk_factors themselves, only ratify or adjust
 the read-out).
 
 Writes a `review_actions` audit-trail row for every verdict (ratify/adjust/
-reject) — a deliberate, scoped exception to "agents stay DB-agnostic, only
-state_graph.py's nodes call supabase_client" (every other agent in this
-package still follows that). Done here instead of in state_graph.py's
-judge_node because the snapshot this row needs (the gap's state
-*immediately before* this call mutates it, plus the model's raw verdict) only
-exists inside this method — pushing it out to the node would mean either
-threading the pre-mutation state back out too, or reconstructing it, for no
-real benefit. The write is best-effort (logged, never raised) so a
-review_actions failure can never crash graph execution over what is an audit
-log, not the primary artifact — the GapFinding itself is unaffected either way.
+reject) — every other agent in this package stays DB-agnostic and leaves
+persistence to state_graph.py's nodes, but this one write is a deliberate
+exception. It happens here instead of in state_graph.py's judge_node because
+the snapshot this row needs (the gap's state *immediately before* this call
+mutates it, plus the model's raw verdict) only exists inside this method —
+pushing it out to the node would mean either threading the pre-mutation
+state back out too, or reconstructing it, for no real benefit. The write is
+best-effort (logged, never raised) so a review_actions failure can never
+crash graph execution over what is an audit log, not the primary artifact —
+the GapFinding itself is unaffected either way.
 """
 
 from __future__ import annotations
@@ -150,8 +148,8 @@ class JudgeAgent:
         self._record_review_action(gap_finding, response, verdict, parsed)
 
         if verdict == "reject":
-            # A rejected finding is still returned (never silently dropped —
-            # same principle as Step 4's failed span verification), but
+            # A rejected finding is still returned (never silently dropped,
+            # same principle used for failed span verification), but
             # demoted to needs_review status so it doesn't read as an
             # actionable open gap while contested.
             return gap_finding.model_copy(update={"status": "disputed"})

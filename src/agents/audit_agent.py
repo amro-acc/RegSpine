@@ -1,38 +1,35 @@
 """AuditAgent: evaluates a mapped obligation/control pair for compliance
-gaps (spec.md §7.2.9 + §7.2.10, consolidated into one agent per this step's
-scope).
+gaps.
 
-CRITICAL per this step's instructions: uses role=REASONER (gpt-5.1 primary,
-gpt-5.6-luna fallback — handled entirely inside LLMGateway, this agent never
-sees or reacts to which one actually answered).
+Uses role=REASONER (gpt-5.1 primary, gpt-5.6-luna fallback — handled
+entirely inside LLMGateway; this agent never sees or reacts to which one
+actually answered).
 
-gap_class is code-computed, not LLM-decided, wherever ControlMapping gives
-enough signal to do so (hard invariant #3: "gap preconditions... computed
-in code"): coverage_level=none -> no_control, partial -> partial_coverage,
-deterministically, overriding whatever the model proposes for those cases.
-Only when coverage_level=full does the model's judgement (has_gap/gap_class)
-stand, since no evidence data flows through this simplified agent to compute
-one of the evidence-dependent classes deterministically either.
+gap_class is computed in code, not left to the LLM, wherever ControlMapping
+gives enough signal to do so: coverage_level=none -> no_control, partial ->
+partial_coverage, deterministically, overriding whatever the model proposes
+for those cases. Only when coverage_level=full does the model's judgement
+(has_gap/gap_class) stand, since there's no evidence data flowing through
+this agent to compute one of the evidence-dependent classes deterministically
+either.
 
-Returns GapFinding | None — a genuine deviation from "must output a
-GapFinding": if coverage is full and the model finds nothing wrong,
-fabricating a gap to satisfy that requirement would be worse than
-returning nothing.
+Returns GapFinding | None: if coverage is full and the model finds nothing
+wrong, we return None rather than fabricate a gap just to have something to
+report.
 
-mapping/control are Optional (added for Step 6's orchestration): when
-MappingAgent.map() finds zero candidate controls at all, it correctly
-returns None rather than fabricate a ControlMapping with no control_id
-to point to. That is a DIFFERENT, more severe case than
-coverage_level=NONE (which still names a specific, if inadequate,
-control) and audit_node must not silently skip it — it is the
-most important no_control case there is. When mapping is None this
-agent still calls the model for narrative/risk_factors (there is
-real context to write about — the obligation itself — even with no
-control to discuss), but gap_class is forced to "no_control"
-deterministically, same as the coverage_level=NONE case.
+mapping/control are Optional: when MappingAgent.map() finds zero candidate
+controls at all, it returns None rather than fabricate a ControlMapping with
+no control_id to point to. That's a different, more severe case than
+coverage_level=NONE (which still names a specific, if inadequate, control),
+and audit_node must not silently skip it — it's the most important
+no_control case there is. When mapping is None this agent still calls the
+model for narrative/risk_factors (there's real context to write about — the
+obligation itself — even with no control to discuss), but gap_class is
+forced to "no_control" deterministically, same as the coverage_level=NONE
+case.
 
 risk_score/risk_band are computed by src/risk/scoring.py from model-supplied
-risk_factors — never taken directly from the model (hard invariant #3).
+risk_factors — never taken directly from the model.
 """
 
 from __future__ import annotations
@@ -115,7 +112,7 @@ class AuditAgent:
         if mapping is None:
             # Zero candidate controls existed at all — the most severe
             # no_control case, and unambiguous enough to not depend on the
-            # model's has_gap judgement (hard invariant #3).
+            # model's has_gap judgement.
             deterministic_class = "no_control"
         else:
             deterministic_class = _DETERMINISTIC_GAP_CLASS_BY_COVERAGE.get(mapping.coverage_level)

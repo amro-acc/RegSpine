@@ -1,13 +1,10 @@
-"""RemediationAgent: drafts a RemediationAction for a ratified GapFinding
-(spec.md §7.2.10-adjacent).
+"""RemediationAgent: drafts a RemediationAction for a ratified GapFinding.
 
-Returns a single RemediationAction, not a list — the simpler of the two
-options this step's instructions explicitly offered ("a list ... or a
-single one, matching the schema"), matching the single-object prompt schema
-this agent actually uses.
+Returns a single RemediationAction, not a list — matches the single-object
+prompt schema this agent actually uses.
 
-DB-agnostic like every other Step 4/5 agent: returns a typed object, does
-not call src/database/supabase_client.py itself.
+DB-agnostic like every other agent in this package: returns a typed object,
+does not call src/database/supabase_client.py itself.
 """
 
 from __future__ import annotations

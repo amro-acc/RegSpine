@@ -1,14 +1,13 @@
-"""SQLite-backed LLM response cache (spec.md §9.4).
+"""SQLite-backed LLM response cache.
 
-Cache key formula matches spec.md exactly: sha256(model_id|prompt|schema_version).
-Including schema_version in the key means a change to a Pydantic output schema
-naturally invalidates old cached responses instead of silently returning
+Cache key is sha256(model_id|prompt|schema_version). Including
+schema_version means a change to a Pydantic output schema naturally
+invalidates old cached responses instead of silently returning
 stale-shaped data.
 
-Not in scope here (deferred, per "small changes at a time"): the
-REGAGENTX_CACHE on/off runtime toggle. That's a decision about *when* to call
-this module, which belongs in src/llm/gateway.py (the caller), not baked into
-the cache mechanics themselves.
+The REGSPINE_CACHE on/off toggle lives in src/llm/gateway.py (the
+caller), not here — this module doesn't need to know why or when it's
+being called, just how to cache a call.
 """
 
 from __future__ import annotations
@@ -59,7 +58,7 @@ def _sha256(text: str) -> str:
 
 
 def compute_cache_key(model_name: str, prompt: str, schema_version: str) -> str:
-    """spec.md §9.4: sha256(model_id|prompt|schema_version)."""
+    """sha256(model_id|prompt|schema_version)."""
     return _sha256(f"{model_name}|{prompt}|{schema_version}")
 
 

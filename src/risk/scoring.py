@@ -1,4 +1,4 @@
-"""Deterministic risk scoring (spec.md §7.3, hard invariant #3).
+"""Deterministic risk scoring.
 
 "Arithmetic is Python, judgement is the model." The model supplies five
 factors (1-5 each, with rationale — the rationale isn't captured by this
@@ -42,7 +42,7 @@ def _load_config() -> dict:
 
 
 def compute_risk_score(risk_factors: dict[str, int]) -> int:
-    """risk_score = round(sum(weight * factor) / 5 * 100) — spec.md §7.3.
+    """risk_score = round(sum(weight * factor) / 5 * 100).
     Each factor must be an integer 1-5; missing factors are a caller bug,
     not something to silently default (a model-supplied factor set that's
     incomplete should fail loudly, not produce a quietly-wrong score)."""

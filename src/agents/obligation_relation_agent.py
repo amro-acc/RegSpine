@@ -1,24 +1,22 @@
 """ObligationRelationAgent: pairwise comparison of two RegulatoryObligation
 records — possibly from different regulators — to detect a relationship
-worth tracking (spec.md §7.2.13/§7.2.14; docs/roadmap.md features 13
-"cross-regulation intelligence" and 14 "regulatory contradiction detection").
+worth tracking (cross-regulation overlap and contradiction detection).
 
-Both roadmap features are one comparison call apart: "do these obligations
-overlap" and "do these obligations conflict" are two possible verdicts of
-the exact same question, so one agent/prompt covers both rather than
-building two near-duplicate ones. docs/roadmap.md flagged #14 as needing
-"#13's corpus breadth to be meaningful" — the golden set built for the
-D2 eval suite (evals/golden/golden_obligations.json: DORA, NIS2, Basel III)
-already supplies that breadth, which is what makes reopening both together
-worthwhile now rather than later.
+Overlap and conflict detection are one comparison call apart: "do these
+obligations overlap" and "do these obligations conflict" are two possible
+verdicts of the exact same question, so one agent/prompt covers both rather
+than building two near-duplicate ones. Conflict detection needs enough
+corpus breadth to be meaningful, which the golden set built for the eval
+suite (evals/golden/golden_obligations.json: DORA, NIS2, Basel III) already
+supplies.
 
-Most obligation pairs are unrelated — that is the prompt's own stated
+Most obligation pairs are unrelated — that's the prompt's own stated
 default, not a fallback this agent adds defensively. A "no relation" verdict
 returns None (never fabricates an ObligationRelation row), matching
 MappingAgent.map()'s "zero candidates -> None, don't force a mapping"
-precedent (spec.md §7.2.7).
+precedent.
 
-DB-agnostic like the other Step 4/5 agents: returns a typed
+DB-agnostic like the other agents in this package: returns a typed
 ObligationRelation or None, does not call src/database/supabase_client.py
 itself.
 """
@@ -44,8 +42,8 @@ def _load_prompt_template() -> str:
 
 
 class ObligationRelationAgent:
-    """Role: EXTRACTOR (spec.md §7.1) — obligation-pair-count volume, same
-    cost profile as mapping_agent.py, not REASONER-tier low-volume judgement."""
+    """Role: EXTRACTOR — obligation-pair-count volume, same cost profile as
+    mapping_agent.py, not REASONER-tier low-volume judgement."""
 
     PROMPT_VERSION = "v1"
 

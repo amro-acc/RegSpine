@@ -1,44 +1,35 @@
 """Thin Gemini client. Called only by src/llm/gateway.py — never directly by
-agents (spec.md §15). Reads GOOGLE_API_KEY from the environment explicitly
-and passes it straight to google.genai.Client.
+agents. Reads GOOGLE_API_KEY from the environment explicitly and passes it
+straight to google.genai.Client.
 
-Switched off langchain_google_genai (2026-09-26): Google's Gemini API keys
-transitioned from the legacy "Standard Key" format (AIza...) to the new
-"Auth Key" format (AQ....) starting May 2026, with Standard keys rejected
-outright by September 2026 (ai.google.dev/gemini-api/docs/api-key). Auth
-keys are confirmed to work correctly against the native
-generativelanguage.googleapis.com endpoint via the official `google-genai`
-SDK — but a live debug session (scripts/debug_audit.py) reproduced Google's
-own backend rejecting a freshly-issued, correctly-formatted AQ.-prefixed key
-("API key not valid") specifically when routed through
-langchain_google_genai's ChatGoogleGenerativeAI wrapper. That's a
-third-party-tool auth-handling gap (matches reports of tools hardcoded
-around the old AIza format), not an invalid key — calling the official SDK
-directly removes that layer entirely rather than working around it.
+We call the official `google-genai` SDK directly instead of going through
+langchain_google_genai. Google's Gemini API keys moved from the legacy
+"Standard Key" format (AIza...) to the new "Auth Key" format (AQ....), and
+Auth keys work fine against the native generativelanguage.googleapis.com
+endpoint via the official SDK — but langchain_google_genai's
+ChatGoogleGenerativeAI wrapper rejected a freshly-issued, correctly-formatted
+AQ.-prefixed key ("API key not valid"). That's a third-party-tool
+auth-handling gap (matches reports of tools hardcoded around the old AIza
+format), not an invalid key — calling the SDK directly removes that layer
+entirely rather than working around it.
 
-Gemini 3 temperature guidance (ai.google.dev/gemini-api/docs/gemini-3,
-checked 2026-09-27): "Changing the temperature (setting it below 1.0) may
-lead to unexpected behavior, such as looping or degraded performance,
-particularly in complex mathematical or reasoning tasks" — this applies to
-every model in this family (gemini-3.x), including judge_pool's
-gemini-3.8-flash (briefly gemini-3.1-pro-preview, reverted same day for a
-free-tier quota wall — config/models.yaml). `temperature` is therefore
-optional here and left unset (Gemini's own default, 1.0) unless a config
-entry explicitly overrides it — never silently forced to 0 the way the old
-gemini-3.8-flash EXTRACTOR role used to.
+Gemini 3 models explicitly warn against setting temperature below 1.0
+("may lead to unexpected behavior, such as looping or degraded performance,
+particularly in complex mathematical or reasoning tasks" —
+ai.google.dev/gemini-api/docs/gemini-3) — this applies to every model in
+this family (gemini-3.x), including judge_pool's gemini-3.8-flash.
+`temperature` is therefore optional here and left unset (Gemini's own
+default, 1.0) unless a config entry explicitly overrides it.
 
-Multi-key rotation (2026-09-28): Google's free-tier quota
-(generate_content_free_tier_requests) is per API key/project/model, not
-per account — reproduced live: "limit: 20, model: gemini-3.8-flash" via
-GenerateRequestsPerDayPerProjectPerModel-FreeTier. judge_pool is low-volume
-but not zero-volume, and this is now the only Gemini-dependent role in the
-system (§14.1.3), so a single key's 20/day cap is a real demo-day risk.
+Google's free-tier quota (generate_content_free_tier_requests) is per API
+key/project/model, not per account — a single key's 20/day cap is a real
+risk when judge_pool is the only Gemini-dependent role in the system.
 `GOOGLE_API_KEY` may hold a comma-separated list of keys (each from its own
 Google AI Studio project, each with its own independent 20/day allotment) —
 this module stays "sticky" on one key across calls (spends that key's full
 daily budget before moving on, rather than spreading load pre-emptively
 across keys that don't need it yet) and only rotates to the next key when
-the current one specifically reports RESOURCE_EXHAUSTED (429) — a transient
+the current one specifically reports RESOURCE_EXHAUSTED (429). A transient
 503 "high demand" is a different failure mode entirely (every key would hit
 the same Google-side capacity issue) and is left to gateway.py's existing
 backoff-retry ladder on the same key, not a reason to rotate.

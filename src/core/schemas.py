@@ -1,15 +1,13 @@
-"""Pydantic schemas for the full traceability chain (spec.md §11).
+"""Pydantic schemas for the full traceability chain.
 
 Regulations -> obligations -> applicability -> internal policies/controls ->
 evidence -> testing -> gaps -> remediation -> ongoing monitoring, plus the
 observability layer (runs/agent_steps/llm_calls) and the HITL review log.
 
-RESOLVED (was previously flagged as a tension, not silently picked): hard
-invariant #4 ("every derived row carries provenance, no exceptions") is now
-satisfied uniformly on the five derived entities named in that decision —
-RegulatoryObligation, InternalControl, ControlMapping, GapFinding,
-RemediationAction all carry the same execution-provenance fields
-(created_by_agent, model_id, prompt_version, run_id, confidence, review_state).
+Every derived row must carry provenance, no exceptions: RegulatoryObligation,
+InternalControl, ControlMapping, GapFinding, and RemediationAction all carry
+the same execution-provenance fields (created_by_agent, model_id,
+prompt_version, run_id, confidence, review_state).
 
 Two distinct things are both called "provenance" here, deliberately kept as
 two separate fields rather than merged, because they answer different
@@ -22,8 +20,8 @@ CHECK constraint:
     snippet_hash. Required, strict — see SourceProvenance below.
 
 Two roadmap tables (`ClauseChange`, `ObligationRelation`) are modeled even
-though no agent populates them this cycle — the schema is kept ready per
-spec.md §4/§11, additive later rather than a migration.
+though no agent populates them yet — kept ready so adding them later is
+additive rather than a migration.
 """
 
 from __future__ import annotations
@@ -53,7 +51,7 @@ class ComplianceStatus(str, Enum):
 
 
 class ReviewState(str, Enum):
-    """HITL review state (spec.md §8.5, §10.2, hard invariants #1 and #10)."""
+    """HITL review state."""
 
     PROPOSED = "proposed"
     ACCEPTED = "accepted"
@@ -77,9 +75,9 @@ class DocClass(str, Enum):
 
 class ExtractionMethod(str, Enum):
     NATIVE = "native"
-    OCR = "ocr"                # roadmap — §6.3, unused this cycle
-    VISION = "vision"          # roadmap — §6.3, unused this cycle
-    RECONCILED = "reconciled"  # roadmap — §6.3, unused this cycle
+    OCR = "ocr"                # roadmap, not populated yet
+    VISION = "vision"          # roadmap, not populated yet
+    RECONCILED = "reconciled"  # roadmap, not populated yet
 
 
 class ApplicabilityDriver(str, Enum):
@@ -114,9 +112,8 @@ class Sufficiency(str, Enum):
 
 
 class OperatingEffective(str, Enum):
-    """Tri-state, not boolean — spec.md §7.2.9: an assessment with no evidence
-    returns 'unknown', which is a different and more useful answer than
-    'false'."""
+    """Tri-state, not boolean: an assessment with no evidence returns
+    'unknown', which is a different and more useful answer than 'false'."""
 
     TRUE = "true"
     FALSE = "false"
@@ -124,7 +121,7 @@ class OperatingEffective(str, Enum):
 
 
 class ChangeType(str, Enum):
-    """Roadmap (feature 2) — no agent populates this yet."""
+    """Roadmap — no agent populates this yet."""
 
     ADDED = "added"
     REMOVED = "removed"
@@ -134,7 +131,7 @@ class ChangeType(str, Enum):
 
 
 class Materiality(str, Enum):
-    """Roadmap (feature 2)."""
+    """Roadmap — no agent populates this yet."""
 
     HIGH = "high"
     MEDIUM = "medium"
@@ -143,7 +140,7 @@ class Materiality(str, Enum):
 
 
 class RelationType(str, Enum):
-    """Roadmap (feature 14)."""
+    """Roadmap — no agent populates this yet."""
 
     OVERLAPS = "overlaps"
     CONFLICTS_WITH = "conflicts_with"
@@ -152,11 +149,10 @@ class RelationType(str, Enum):
 
 
 class ActionType(str, Enum):
-    """Structure for RemediationAction.action_type (Step 6). Stored as plain
-    TEXT in the DB, not a CHECK-constrained enum like coverage_level/
-    gap_class — those closed taxonomies came from spec.md itself; this one
-    was introduced ad hoc by this step and reads as an open set ("...etc."),
-    so a DB constraint would just create migration churn as it grows."""
+    """Structure for RemediationAction.action_type. Stored as plain TEXT in
+    the DB, not a CHECK-constrained enum like coverage_level/gap_class —
+    those are closed taxonomies, but action types are an open set that keeps
+    growing, so a DB constraint would just create migration churn."""
 
     POLICY_UPDATE = "POLICY_UPDATE"
     NEW_CONTROL = "NEW_CONTROL"
@@ -192,9 +188,8 @@ class SourceProvenance(BaseModel):
 
 
 class ReviewDecision(str, Enum):
-    """The `action` column on `review_actions` (spec.md §11) — named
-    ReviewDecision, not ReviewAction, to avoid colliding with the
-    ReviewAction model below."""
+    """The `action` column on `review_actions` — named ReviewDecision, not
+    ReviewAction, to avoid colliding with the ReviewAction model below."""
 
     ACCEPT = "accept"
     REJECT = "reject"
@@ -229,7 +224,7 @@ class Page(BaseModel):
     document_version_id: uuid.UUID
     page_no: int
     text_content: str | None = None
-    # Reserved for the §6.3 D3 roadmap extension; unused/null this cycle:
+    # Reserved for a future OCR/vision extraction path; unused/null for now:
     ocr_content: str | None = None
     extraction_method: ExtractionMethod = ExtractionMethod.NATIVE
     reconciliation_score: float | None = None
@@ -287,13 +282,13 @@ class LLMCall(BaseModel):
     cost_usd: float | None = None
     latency_ms: int | None = None
     cache_hit: bool = False
-    # Added ahead of the Step-2 gateway build (spec.md §7.1.1): every fallback
-    # invocation must be logged distinctly, not blended with primary calls.
+    # Every fallback invocation must be logged distinctly, not blended with
+    # primary calls.
     fallback_used: bool = False
 
 
 class ReviewAction(BaseModel):
-    """HITL review log (spec.md §9.3 — feeds the trainability loop)."""
+    """HITL review log — feeds the trainability loop."""
 
     id: int | None = None  # bigserial
     entity_table: str  # polymorphic — not a real FK, can point at any table
@@ -310,9 +305,9 @@ class ReviewAction(BaseModel):
 
 
 class RegulatoryObligation(BaseModel):
-    """A single extracted obligation (spec.md §7.2.4). FKs to `Clause`, not a
-    denormalized source reference — the Step-2 `source_document`/`source_page`
-    fields are superseded now that the document/clause layer exists."""
+    """A single extracted obligation. FKs to `Clause` rather than storing a
+    denormalized source reference, since the document/clause layer already
+    carries that."""
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     clause_id: uuid.UUID
@@ -325,8 +320,8 @@ class RegulatoryObligation(BaseModel):
     deadline_spec: str | None = None
     obligation_type: str  # governance | reporting | capital | data | ict | conduct | recordkeeping
 
-    # Execution provenance (hard invariant #4, now uniform across all 5
-    # derived entities — see module docstring)
+    # Execution provenance — uniform across all 5 derived entities, see
+    # module docstring
     confidence: float = Field(ge=0.0, le=1.0)
     span_verified: bool = False
     span_verify_method: str | None = None  # "exact" | "normalized" | "fuzzy_extraction" | None
@@ -348,7 +343,7 @@ class RegulatoryObligation(BaseModel):
 
 class BankEntity(BaseModel):
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
-    bank_id: uuid.UUID  # tenant/group-level id (spec.md §10.5) — not an FK, a partition key
+    bank_id: uuid.UUID  # tenant/group-level id — not an FK, a partition key
     name: str
     jurisdiction: str
     licences: list[str] = Field(default_factory=list)
@@ -357,10 +352,10 @@ class BankEntity(BaseModel):
 
 
 class ObligationApplicability(BaseModel):
-    """spec.md §7.2.5. Every `applies=True` must cite a specific profile
-    attribute — unsupported assertions are rejected at the application layer,
-    not by a DB constraint (cited_profile_attribute is NOT NULL, but the DB
-    can't verify the citation actually supports the claim)."""
+    """Every `applies=True` must cite a specific profile attribute —
+    unsupported assertions are rejected at the application layer, not by a
+    DB constraint (cited_profile_attribute is NOT NULL, but the DB can't
+    verify the citation actually supports the claim)."""
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     obligation_id: uuid.UUID
@@ -373,10 +368,10 @@ class ObligationApplicability(BaseModel):
 
 
 class InternalControl(BaseModel):
-    """Note: spec.md §11 gave this table no execution-provenance columns at
-    all (control_ingest is deterministic for register rows, EXTRACTOR-based
-    only for policy prose — spec.md §7.2.6). Now uniform with the other 4
-    derived entities per the invariant #4 resolution — see module docstring."""
+    """Execution-provenance columns are uniform with the other 4 derived
+    entities (see module docstring), even though control_ingest itself is
+    deterministic for register rows and EXTRACTOR-based only for policy
+    prose."""
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     bank_id: uuid.UUID  # same tenant/group partition key as BankEntity.bank_id
@@ -390,15 +385,14 @@ class InternalControl(BaseModel):
     source_policy_version_id: uuid.UUID | None = None  # conceptually a DocumentVersion.id
     source_page_no: int | None = None
 
-    # Span verification (added for Step 4's ingestion agent — spec.md §8.2's
-    # zero-hallucination gate now applies to controls too, not just
-    # obligations. Nullable: a control from a structured register row has no
-    # free-text quote to verify (spec.md §7.2.6).
+    # Span verification — the zero-hallucination gate applies to controls
+    # too, not just obligations. Nullable because a control from a
+    # structured register row has no free-text quote to verify.
     verbatim_quote: str | None = None
     span_verified: bool = False
     span_verify_method: str | None = None  # "exact" | "normalized" | "fuzzy_extraction" | None
 
-    # Execution provenance (hard invariant #4 — see module docstring)
+    # Execution provenance — see module docstring
     confidence: float = Field(ge=0.0, le=1.0)
     review_state: ReviewState = ReviewState.PROPOSED
     created_by_agent: str
@@ -407,7 +401,8 @@ class InternalControl(BaseModel):
     run_id: uuid.UUID
     scenario_id: uuid.UUID | None = None
 
-    # Source provenance (distinct from the above — see module docstring)
+    # Source provenance — distinct from execution provenance above, see
+    # module docstring
     provenance: SourceProvenance
 
 
@@ -415,22 +410,20 @@ class InternalControl(BaseModel):
 
 
 class ControlMapping(BaseModel):
-    """Obligation <-> control mapping (spec.md §7.2.7). `prompt_version` was
-    previously omitted (spec.md §11 doesn't put one on this table, unlike
-    `RegulatoryObligation`) — added now for the invariant #4 resolution's
-    uniformity, see module docstring."""
+    """Obligation <-> control mapping. `prompt_version` is included here for
+    consistency with the other derived entities — see module docstring."""
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     obligation_id: uuid.UUID
     control_id: uuid.UUID
 
     coverage_level: CoverageLevel
-    rationale: str  # must reference both obligation text and control text (spec.md §7.2.7)
+    rationale: str  # must reference both obligation text and control text
     cited_control_span: str | None = None
     retrieval_rank: int | None = None
     rerank_score: float | None = None
 
-    # Execution provenance (hard invariant #4 — see module docstring)
+    # Execution provenance — see module docstring
     confidence: float = Field(ge=0.0, le=1.0)
     review_state: ReviewState = ReviewState.PROPOSED
     created_by_agent: str
@@ -439,13 +432,12 @@ class ControlMapping(BaseModel):
     run_id: uuid.UUID
     scenario_id: uuid.UUID | None = None
 
-    # Source provenance (distinct from the above — see module docstring)
+    # Source provenance — distinct from execution provenance above, see
+    # module docstring
     provenance: SourceProvenance
 
-    # Consolidated compliance_status, requested alongside this model in an
-    # earlier step — kept as an additional field layered on top of
-    # coverage_level rather than replacing it, since coverage_level is what
-    # spec.md §11 actually defines.
+    # compliance_status is layered on top of coverage_level rather than
+    # replacing it — coverage_level is the field the schema actually defines.
     compliance_status: ComplianceStatus | None = None
 
 
@@ -472,10 +464,10 @@ class ControlEvidenceLink(BaseModel):
 
 
 class ControlAssessment(BaseModel):
-    """spec.md §7.2.9. Hard invariant #5 — `operating_effective` may never be
-    'true' without a 'sufficient', in-window `ControlEvidenceLink` — enforced
-    in application code (not yet built), not by a DB constraint or by this
-    model; a column-level CHECK cannot express a cross-table join."""
+    """`operating_effective` can never be 'true' without a 'sufficient',
+    in-window `ControlEvidenceLink` — enforced in application code (not yet
+    built), not by a DB constraint or by this model, since a column-level
+    CHECK can't express a cross-table join."""
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     control_id: uuid.UUID
@@ -492,14 +484,10 @@ class ControlAssessment(BaseModel):
 
 
 class GapFinding(BaseModel):
-    """spec.md §7.2.10. No `control_id` field — a gap traces back to its
-    control (if any) indirectly via the `ControlMapping` for the same
-    `obligation_id`, not a direct FK on this table (matches the live
-    `gaps` table, which has no control_id column either). spec.md §11
-    originally gave `gaps` no `created_by_agent`/`model_id`/`confidence`,
-    only `run_id`/`scenario_id`/`review_state` — now uniform with the
-    other 4 derived entities per the invariant #4 resolution, see module
-    docstring.
+    """No `control_id` field — a gap traces back to its control (if any)
+    indirectly via the `ControlMapping` for the same `obligation_id`, not a
+    direct FK on this table (matches the live `gaps` table, which has no
+    control_id column either).
 
     `provenance` (source_file/page_number/snippet_hash) is the least
     naturally well-defined of the 5 entities for this field: a gap isn't
@@ -519,7 +507,7 @@ class GapFinding(BaseModel):
     risk_band: RiskSeverity
     status: str = "open"
 
-    # Execution provenance (hard invariant #4 — see module docstring)
+    # Execution provenance — see module docstring
     confidence: float = Field(ge=0.0, le=1.0)
     review_state: ReviewState = ReviewState.PROPOSED
     created_by_agent: str
@@ -528,16 +516,13 @@ class GapFinding(BaseModel):
     run_id: uuid.UUID
     scenario_id: uuid.UUID | None = None
 
-    # Source provenance (distinct from the above — see module docstring)
+    # Source provenance — distinct from execution provenance above, see
+    # module docstring
     provenance: SourceProvenance
 
 
 class RemediationAction(BaseModel):
-    """spec.md §7.2.10-adjacent. spec.md §11 originally gave this table no
-    provenance/run_id at all — now uniform with the other 4 derived entities
-    per the invariant #4 resolution, see module docstring.
-
-    `provenance` here follows the same convention as GapFinding: points at
+    """`provenance` here follows the same convention as GapFinding: points at
     the source that justifies the remediation (typically the same source as
     the gap/obligation it addresses), not a new independent source."""
 
@@ -554,7 +539,7 @@ class RemediationAction(BaseModel):
     monitoring_metric: str | None = None  # concrete metric for ongoing monitoring (Step 6)
     status: str = "proposed"
 
-    # Execution provenance (hard invariant #4 — see module docstring)
+    # Execution provenance — see module docstring
     confidence: float = Field(ge=0.0, le=1.0)
     review_state: ReviewState = ReviewState.PROPOSED
     created_by_agent: str
@@ -563,7 +548,8 @@ class RemediationAction(BaseModel):
     run_id: uuid.UUID
     scenario_id: uuid.UUID | None = None
 
-    # Source provenance (distinct from the above — see module docstring)
+    # Source provenance — distinct from execution provenance above, see
+    # module docstring
     provenance: SourceProvenance
 
 
@@ -579,7 +565,7 @@ class MonitoringItem(BaseModel):
 
 
 class ClauseChange(BaseModel):
-    """Roadmap (feature 2, spec.md §7.2.11) — no agent populates this cycle."""
+    """Roadmap — no agent populates this yet."""
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     from_version_id: uuid.UUID
@@ -593,7 +579,7 @@ class ClauseChange(BaseModel):
 
 
 class ObligationRelation(BaseModel):
-    """Roadmap (feature 14, spec.md §7.2.13) — no agent populates this cycle."""
+    """Roadmap — no agent populates this yet."""
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     obligation_a: uuid.UUID

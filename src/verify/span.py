@@ -1,14 +1,9 @@
-"""Grounded span verification (spec.md §8.2, hard invariants #1-#2).
+"""Grounded span verification.
 
 Deterministic string work only — no model call anywhere in this module.
 This is the load-bearing anti-hallucination control: a citation that cannot
 be traced to an exact (or near-exact, extraction-artifact-tolerant) location
 in its source text must never reach `accepted`/`span_verified=True`.
-
-Named verify_citation_span(source_text, citation_text) rather than the
-verify_span(quote, source_text) pseudocode in spec.md §8.2 — that section
-predates any actual code; this is now the authoritative signature and
-spec.md has been updated to match rather than left to drift.
 """
 
 from __future__ import annotations
@@ -26,7 +21,7 @@ PIPELINE_CONFIG_PATH = REPO_ROOT / "config" / "pipeline.yaml"
 @lru_cache(maxsize=1)
 def _fuzzy_floor() -> float:
     """config/pipeline.yaml's span_verifier.fuzzy_floor — not hardcoded here
-    a second time (CLAUDE.md §5: config over constants)."""
+    a second time."""
     with open(PIPELINE_CONFIG_PATH, encoding="utf-8") as f:
         return yaml.safe_load(f)["span_verifier"]["fuzzy_floor"]
 
@@ -45,7 +40,7 @@ def _normalize_with_offsets(text: str) -> tuple[str, list[int]]:
         # immediately followed by whitespace is dropped entirely, along with
         # the whitespace run, rather than kept as a literal "-" plus a space
         # — otherwise "with- in" never gets close enough to "within" for the
-        # fuzzy floor, defeating the whole point of this tier (spec.md §8.2).
+        # fuzzy floor, defeating the whole point of this tier.
         if ch == "-" and i + 1 < n and text[i + 1].isspace():
             i += 1
             while i < n and text[i].isspace():
@@ -103,8 +98,7 @@ def _fuzzy_best_window(source_text: str, citation_text: str) -> dict:
 
 
 def verify_citation_span(source_text: str, citation_text: str) -> dict:
-    """Hard gate. Deterministic: no model call in this path (hard invariants
-    #1-#2). Returns:
+    """Hard gate. Deterministic: no model call in this path. Returns:
         {
             "verified": bool,
             "match_ratio": float,
@@ -112,10 +106,9 @@ def verify_citation_span(source_text: str, citation_text: str) -> dict:
             "end_char": int,
             "method": "exact" | "normalized" | "fuzzy_extraction" | "none",
         }
-    `method` is additive beyond what this step asked for — it's the field
-    src/core/schemas.py's span_verify_method column expects, and it's the
-    difference between "the demo can show which tier caught this" and "we
-    just have a boolean."
+    `method` feeds src/core/schemas.py's span_verify_method column — it's
+    the difference between "the demo can show which tier caught this" and
+    "we just have a boolean."
     """
     if not citation_text:
         return {"verified": False, "match_ratio": 0.0, "start_char": 0, "end_char": 0, "method": "none"}

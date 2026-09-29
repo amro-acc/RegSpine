@@ -1,19 +1,19 @@
-"""LangGraph orchestration wiring the Step 4/5/6 DB-agnostic agents to
-Supabase persistence via the graph state (spec.md's ingest -> applicability
--> mapping -> audit -> judge -> remediation chain).
+"""LangGraph orchestration wiring the DB-agnostic agents to Supabase
+persistence via the graph state: ingest -> applicability -> mapping ->
+audit -> judge -> remediation.
 
-CRITICAL PERSISTENCE PATTERN (per this step's instructions): every node
-calls its DB-agnostic agent first, then immediately persists the result via
-src/database/supabase_client.py, then appends the typed object(s) to state.
-Agents themselves never call supabase_client — only these node functions do.
+Persistence pattern: every node calls its DB-agnostic agent first, then
+immediately persists the result via src/database/supabase_client.py, then
+appends the typed object(s) to state. Agents themselves never call
+supabase_client — only these node functions do.
 
 Two accumulator fields exist for gaps, not one — `gaps` (audit_node's raw
 output) and `reviewed_gaps` (judge_node's output). Reusing one field for both
 would double the list under LangGraph's `operator.add` reducer (concatenation,
 not replacement): judge_node's per-gap adjustment would land as *additional*
 entries alongside audit_node's originals rather than superseding them. Each
-node's output gets its own field for the same reason spec.md's chain treats
-each stage as producing a new artifact, not mutating the last one in place.
+node's output gets its own field because each stage produces a new artifact
+rather than mutating the last one in place.
 
 Obligation -> control resolution for judge_node/remediation_node goes through
 `ControlMapping.obligation_id`, not a `GapFinding.control_id` field — no such
@@ -24,8 +24,7 @@ Scope boundary (matches ingestion_agent.py's own documented boundary):
 clause_id/bank_id/entity_id/run_id are caller-supplied, real, pre-existing
 row ids. This graph does not create the upstream Run/Clause/BankEntity
 scaffolding those FKs point at — clause_segmenter and run-tracking are out
-of this step's scope, exactly as ingestion_agent.py already established for
-clause_id/bank_id.
+of scope here, same as ingestion_agent.py's clause_id/bank_id handling.
 """
 
 from __future__ import annotations
@@ -110,9 +109,7 @@ def ingest_node(state: OverallState) -> dict:
         # Upsert into Chroma with the control's real id so mapping_node can
         # resolve query_with_rerank's returned ids back to full
         # InternalControl objects via an in-memory lookup, with no redundant
-        # DB round-trip (Step 3's seed script only indexed whole dummy text
-        # files, never per-control structured entries — this is the first
-        # place that happens).
+        # DB round-trip.
         vector_store.upsert_documents(
             vector_store.COLLECTION_CONTROLS,
             [
@@ -131,13 +128,11 @@ def ingest_node(state: OverallState) -> dict:
 def applicability_node(state: OverallState) -> dict:
     entity_id = uuid.UUID(state["entity_id"])
 
-    # Per-entity profile fix: previously always defaulted to the static
-    # config/bank_profile.yaml regardless of which bank_profile_id was
-    # selected (reproduced live -- DORA dropped for "Meridian Bank Europe
-    # SE" because the agent was still reasoning over "Meridian Bank USA"'s
-    # hardcoded profile). Falls back to the static file only if the entity
-    # row is somehow missing (defensive -- main.py already validates the
-    # entity exists before invoking this graph).
+    # Uses the actual entity's profile (not the static
+    # config/bank_profile.yaml) so results reflect whichever bank_profile_id
+    # was selected. Falls back to the static file only if the entity row is
+    # somehow missing (defensive -- main.py already validates the entity
+    # exists before invoking this graph).
     entity_row = supabase_client.get_bank_entity(entity_id)
     bank_profile = bank_profile_from_entity_row(entity_row) if entity_row else None
     agent = ApplicabilityAgent(bank_profile=bank_profile)
@@ -269,16 +264,15 @@ def _build_graph() -> StateGraph:
 
 @contextmanager
 def compiled_graph(checkpointer_path: str | None = None):
-    """SqliteSaver.from_conn_string is a context manager — confirmed via
-    inspect.signature (`(conn_string: str) -> Iterator[SqliteSaver]`), not a
-    plain factory. Compilation and every invocation must happen inside its
-    `with` block, so this wraps that instead of leaking the requirement to
-    every caller: `with compiled_graph(path) as app: app.invoke(...)`.
+    """SqliteSaver.from_conn_string is a context manager
+    (`(conn_string: str) -> Iterator[SqliteSaver]`), not a plain factory.
+    Compilation and every invocation must happen inside its `with` block, so
+    this wraps that instead of leaking the requirement to every caller:
+    `with compiled_graph(path) as app: app.invoke(...)`.
 
     Reuses the same cache.db path convention as src/core/cache.py
-    (SQLITE_CACHE_PATH env var) per this step's "using the cache.db setup"
-    instruction — checkpoints and the LLM cache share one SQLite file, in
-    different tables.
+    (SQLITE_CACHE_PATH env var) — checkpoints and the LLM cache share one
+    SQLite file, in different tables.
     """
     path = checkpointer_path or os.environ.get("SQLITE_CACHE_PATH", DEFAULT_CACHE_PATH)
     with SqliteSaver.from_conn_string(path) as checkpointer:

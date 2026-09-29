@@ -1,22 +1,18 @@
 """IngestionAgent: extracts RegulatoryObligation and InternalControl
-candidates from raw text chunks (spec.md §7.2.4, §7.2.6), span-verifying
-every citation before constructing the final typed object (spec.md §8.2,
-hard invariants #1-#2).
+candidates from raw text chunks, span-verifying every citation before
+constructing the final typed object.
 
-Scope note: `RegulatoryObligation.clause_id` is a required FK, but
-clause_segmenter (spec.md §7.2.3 — the stage that would produce real
-`Clause` rows from a document) isn't built yet. This agent takes `clause_id`
-(and `bank_id`, for controls) as caller-supplied parameters rather than
-inventing clause creation here — matching spec.md §7.2.4's own framing,
-"In: clause text (+ parent context window)," which already assumes the
-clause exists upstream.
+Scope note: `RegulatoryObligation.clause_id` is a required FK, but there's
+no clause_segmenter yet (the stage that would produce real `Clause` rows
+from a document). This agent takes `clause_id` (and `bank_id`, for controls)
+as caller-supplied parameters rather than inventing clause creation here —
+the input is clause text (plus parent context window), which already
+assumes the clause exists upstream.
 
 Failed span verification is never a silent drop: the candidate is still
 returned, with `span_verified=False` and `review_state=NEEDS_REVIEW` — a
 human decides, the agent doesn't discard evidence of what the model claimed.
-The full retry-then-re-extract loop (spec.md §7.2.4, up to
-`max_span_reextract_retries`) is bigger scope than this step asked for and
-is not built here.
+A full retry-then-re-extract loop isn't built here.
 """
 
 from __future__ import annotations
@@ -41,10 +37,9 @@ def _load_prompt_template() -> str:
 def parse_json_response(raw_content: str) -> dict:
     """Models sometimes wrap JSON in a ```json fence even when told not to —
     strip that defensively rather than let a cosmetic formatting choice
-    break parsing. Full schema-repair-retry (spec.md §7.1) is not built here;
-    a parse failure returns an empty structure rather than raising, so one
-    bad chunk can't take down a whole ingestion run (spec.md §9.2's
-    page/document-level isolation principle, applied at chunk granularity)."""
+    break parsing. Schema-repair-retry isn't built here; a parse failure
+    returns an empty structure rather than raising, so one bad chunk can't
+    take down a whole ingestion run."""
     text = raw_content.strip()
     if text.startswith("```"):
         text = text.strip("`")
@@ -57,10 +52,10 @@ def parse_json_response(raw_content: str) -> dict:
 
 
 class IngestionAgent:
-    """Role: EXTRACTOR (spec.md §7.1). Model ID is read from
-    config/models.yaml via the gateway, never hardcoded here (hard
-    invariant #8) — the model actually used shows up in provenance because
-    it's read back, not because it's typed as a literal in this file."""
+    """Role: EXTRACTOR. Model ID is read from config/models.yaml via the
+    gateway, never hardcoded here — the model actually used shows up in
+    provenance because it's read back, not because it's typed as a literal
+    in this file."""
 
     PROMPT_VERSION = "v1"
 
@@ -144,8 +139,8 @@ class IngestionAgent:
                 snippet_hash = hashlib.sha256(quote.encode("utf-8")).hexdigest()
             else:
                 # Deterministic register-row extraction has no free-text
-                # quote to verify (spec.md §7.2.6) — not a verification
-                # failure, just nothing to check.
+                # quote to verify — not a verification failure, just nothing
+                # to check.
                 span_verified, span_verify_method, review_state = False, None, ReviewState.PROPOSED
                 snippet_hash = hashlib.sha256(source_text.encode("utf-8")).hexdigest()
 

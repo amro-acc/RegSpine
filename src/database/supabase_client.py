@@ -1,12 +1,10 @@
 """Supabase (Postgres) data-access layer. The only place raw SQL/table writes
-happen (hard invariant #7, CLAUDE.md §3) — agents call these functions, never
-the Supabase client directly.
+happen — agents call these functions, never the Supabase client directly.
 
 Function names follow the Pydantic model names (RegulatoryObligation ->
-insert_obligation, InternalControl -> insert_control, etc.) rather than the
-mixed naming requested alongside this task, since the actual live tables are
-`obligations`, `controls`, `obligation_control_map`, `gaps`, `remediations`,
-`review_actions` (spec.md §11) — every query here targets those real names.
+insert_obligation, InternalControl -> insert_control, etc.). The live tables
+are `obligations`, `controls`, `obligation_control_map`, `gaps`,
+`remediations`, `review_actions` — every query here targets those real names.
 
 Every insert function requires a fully-populated Pydantic model as input,
 which means the mandatory provenance fields (both execution provenance and
@@ -79,10 +77,9 @@ def _payload(model) -> dict:
     return model.model_dump(mode="json")
 
 
-# ============ Runs (added Step 7 — src/api/main.py is the first real "caller"
-# of state_graph.py's compiled graph; Steps 4-6 all took run_id as a
-# pre-existing, caller-supplied id per their own documented scope boundary.
-# The API layer is that caller, so creating the run row is now its job) ============
+# ============ Runs (src/api/main.py calls state_graph.py's compiled graph
+# and owns creating the run row; everything downstream just takes run_id as
+# a given) ============
 
 
 def insert_run(run: Run) -> dict:
@@ -105,13 +102,12 @@ def get_run(run_id: uuid.UUID) -> dict | None:
     return response.data if response else None
 
 
-# ============ Ad-hoc document scaffolding (added Step 7 — RegulatoryObligation.
-# clause_id is a required FK; the API receives raw regulation_text with no
-# upstream Document/Clause already ingested, unlike the batch-ingestion path
-# clause_segmenter would eventually own (spec.md §7.2.3, not built). These are
-# thin, direct inserts of the existing RegulatoryDocument/DocumentVersion/
-# Clause models — no new modelling, just closing the FK chain for API-submitted
-# text so ingest_node's real work has somewhere to attach to) ============
+# ============ Ad-hoc document scaffolding — RegulatoryObligation.clause_id
+# is a required FK, but the API receives raw regulation_text with no
+# upstream Document/Clause already ingested. These are thin, direct inserts
+# of the existing RegulatoryDocument/DocumentVersion/Clause models, just to
+# close the FK chain for API-submitted text so ingest_node's real work has
+# somewhere to attach to ============
 
 
 def insert_regulatory_document(document: RegulatoryDocument) -> dict:
@@ -178,10 +174,10 @@ def list_obligations(review_state: str | None = None, limit: int = 100) -> list[
     return query.execute().data
 
 
-# ============ Bank entities (added Step 6 — applicability_node needs a real
-# row to satisfy ObligationApplicability.entity_id's FK; config/bank_profile.yaml
-# is a file-based stand-in for the LLM prompt context, not a substitute for
-# the actual DB row persistence requires) ============
+# ============ Bank entities (applicability_node needs a real row to satisfy
+# ObligationApplicability.entity_id's FK; config/bank_profile.yaml is a
+# file-based stand-in for the LLM prompt context, not a substitute for the
+# actual DB row persistence requires) ============
 
 
 def insert_bank_entity(entity: BankEntity) -> dict:
@@ -201,9 +197,8 @@ def list_bank_entities() -> list[dict]:
     return response.data
 
 
-# ============ Obligation applicability (added Step 6 — was deferred in Step
-# 4 since ApplicabilityAgent stayed DB-agnostic; the graph orchestration
-# layer is what actually needs to persist these) ============
+# ============ Obligation applicability (ApplicabilityAgent itself stays
+# DB-agnostic; the graph orchestration layer is what persists these) ============
 
 
 def insert_obligation_applicability(record: ObligationApplicability) -> dict:
@@ -227,17 +222,17 @@ def get_applicability_for_obligation(obligation_id: uuid.UUID) -> list[dict]:
 
 def insert_control(control: InternalControl) -> dict:
     """Upsert-by-(bank_id, control_ref), not a plain insert: ingest_node
-    re-runs against the same policy text and the same bank always
-    re-extract the same control_ref (e.g. "INC-07") -- the schema's
-    unique(bank_id, control_ref) (spec.md §11) treats that as one canonical
-    control identity, not one row per audit run. A plain insert() threw a
-    live 23505 unique-violation ("controls_bank_id_control_ref_key") the
-    moment a second run was made against the same bank+policy — reproduced
-    via the UI, not hypothetical.
+    re-runs against the same policy text and the same bank always re-extract
+    the same control_ref (e.g. "INC-07") — the schema's
+    unique(bank_id, control_ref) treats that as one canonical control
+    identity, not one row per audit run. A plain insert() threw a live 23505
+    unique-violation ("controls_bank_id_control_ref_key") the moment a second
+    run was made against the same bank+policy — reproduced via the UI, not
+    hypothetical.
 
     Reuses the EXISTING row's id rather than letting the payload's
-    freshly-generated uuid4 (InternalControl.id's default_factory)
-    overwrite it in place: `id` is a primary key referenced by
+    freshly-generated uuid4 (InternalControl.id's default_factory) overwrite
+    it in place: `id` is a primary key referenced by
     obligation_control_map.control_id (and others) with no `ON UPDATE
     CASCADE` (db/migrations/001_init.sql) — changing it here would either
     hard-fail on any earlier run's existing mapping FK or, if that mapping
@@ -321,8 +316,8 @@ def insert_gap(gap: GapFinding) -> dict:
 
 
 def update_gap(gap: GapFinding) -> dict:
-    """For judge_node (Step 6): JudgeAgent returns a GapFinding with the same
-    `id` as the one audit_node already inserted (ratified or with adjusted
+    """For judge_node: JudgeAgent returns a GapFinding with the same `id` as
+    the one audit_node already inserted (ratified or with adjusted
     severity/status) — a second insert() would hit a primary-key collision.
     This updates that row in place rather than duplicating it."""
     payload = _payload(gap)
@@ -366,12 +361,10 @@ def list_remediations_by_run(run_id: uuid.UUID) -> list[dict]:
     return response.data
 
 
-# ============ Clause changes (feature 2, reopened from docs/roadmap.md's cut
-# list — src/agents/change_watcher_agent.py is the first agent to populate
-# this table. `clause_changes` has no run_id column of its own (spec.md §11
-# kept this table minimal, roadmap-only); the diff run's id is carried
-# inside `text_diff` instead of a migration, matching how ObligationRelation
-# was left additive-only in docs/roadmap.md) ============
+# ============ Clause changes — src/agents/change_watcher_agent.py is the
+# first agent to populate this table. `clause_changes` has no run_id column
+# of its own (kept minimal, roadmap-only); the diff run's id is carried
+# inside `text_diff` instead ============
 
 
 def insert_clause_change(change: ClauseChange) -> dict:
@@ -386,16 +379,14 @@ def list_clause_changes_by_to_version(to_version_id: uuid.UUID) -> list[dict]:
     return response.data
 
 
-# ============ Review actions (db/migrations/001_init.sql's audit-trail table
-# for any human or model review of an agent output — judge_agent.py is the
-# first writer). Deliberately polymorphic (entity_table + entity_id, "not a
-# real FK" per the migration's own comment), so unlike every insert_* above
-# this takes a plain dict rather than one fixed Pydantic model — a single
-# typed ReviewAction schema tied to one entity shape would fight that
-# design, not match it. Caller owns populating the required columns
-# (entity_table, entity_id, reviewer, action); this function does not
-# default or validate them, same division of responsibility the rest of
-# this module uses for pre-validated input. ============
+# ============ Review actions (audit-trail table for any human or model
+# review of an agent output — judge_agent.py is the first writer).
+# Deliberately polymorphic (entity_table + entity_id, not a real FK), so
+# unlike every insert_* above this takes a plain dict rather than one fixed
+# Pydantic model — a single typed ReviewAction schema tied to one entity
+# shape would fight that design, not match it. Caller owns populating the
+# required columns (entity_table, entity_id, reviewer, action); this
+# function does not default or validate them. ============
 
 
 def insert_review_action(action_payload: dict) -> dict:
@@ -403,9 +394,9 @@ def insert_review_action(action_payload: dict) -> dict:
     return response.data[0]
 
 
-# ============ Obligation relations (roadmap features 13/14 — cross-regulation
-# intelligence + regulatory contradiction detection, reopened 2026-09-29;
-# src/agents/obligation_relation_agent.py is the first writer). ============
+# ============ Obligation relations (roadmap — cross-regulation intelligence
+# and regulatory contradiction detection; src/agents/obligation_relation_agent.py
+# is the first writer). ============
 
 
 def insert_obligation_relation(relation: ObligationRelation) -> dict:

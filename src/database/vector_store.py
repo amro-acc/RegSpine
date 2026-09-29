@@ -1,14 +1,12 @@
 """ChromaDB embedded persistent store + bge-reranker-base cross-encoder
-reranking (spec.md §7.2.7, §14.1.1).
+reranking.
 
 Both the embedding model and the reranker are loaded once and cached
-module-level (not just the reranker, as originally scoped — MiniLM is exactly
-as expensive to reload repeatedly, so the same singleton pattern applies to
-both for the same reason).
+module-level — MiniLM is just as expensive to reload repeatedly as the
+reranker, so the same singleton pattern applies to both.
 
 persist_directory comes from config/pipeline.yaml (`chroma_db` at repo root,
-matching spec.md §14.2/CLAUDE.md §6/.gitignore) — not hardcoded, not
-data/chroma_db.
+matching .gitignore) — not hardcoded, not data/chroma_db.
 """
 
 from __future__ import annotations
@@ -47,9 +45,8 @@ def get_chroma_client():
 
 @lru_cache(maxsize=1)
 def get_embedding_model():
-    """MiniLM, loaded once. Not the field this task named as needing a
-    singleton, but equally expensive to reload — same pattern applied for
-    the same reason as the reranker below."""
+    """MiniLM, loaded once — equally expensive to reload as the reranker
+    below, so it gets the same singleton treatment."""
     from sentence_transformers import SentenceTransformer
 
     model_name = _load_config()["chroma"]["embedding_model"]
@@ -59,7 +56,7 @@ def get_embedding_model():
 @lru_cache(maxsize=1)
 def get_reranker():
     """bge-reranker-base, loaded once at first use and cached for the life of
-    the process — this is the singleton this task explicitly asked for."""
+    the process."""
     from FlagEmbedding import FlagReranker
 
     model_name = _load_config()["chroma"]["reranker_model"]
@@ -98,13 +95,12 @@ def query_with_rerank(
     rerank_top_n: int | None = None,
 ) -> list[dict]:
     """Embed -> retrieve top_k -> cross-encoder rerank -> return top
-    rerank_top_n (spec.md §7.2.7's embed/rerank/adjudicate flow — this
-    function is the first two steps).
+    rerank_top_n. This function covers the embed/retrieve/rerank steps;
+    the calling agent handles adjudication on top of the results.
 
     Defaults come from config/pipeline.yaml's retrieval.top_k_initial/
     top_k_reranked rather than being hardcoded here a second time with
-    different numbers (CLAUDE.md §5: config over constants) — still
-    overridable per call.
+    different numbers — still overridable per call.
     """
     retrieval_cfg = _load_config()["retrieval"]
     top_k = top_k if top_k is not None else retrieval_cfg["top_k_initial"]

@@ -1,24 +1,19 @@
 """MappingAgent: adjudicates which candidate control (if any) covers a given
-obligation (spec.md §7.2.7).
+obligation.
 
-Uses role=EXTRACTOR per this step's explicit instruction — spec.md §7.2.7
-originally assigned this to REASONER (GPT-5.1). Flagged as a real design
-departure, not silently reconciled; spec.md's routing table has been updated
-to match what's actually built rather than left to disagree with it.
-EXTRACTOR itself moved from Gemini 3.8 Flash to GPT-5.1 on 2026-09-27 (spec.md
-§14.1.3) — this agent's call still goes through the EXTRACTOR role, not a
-literal model string, so nothing here changed as a result.
+Uses role=EXTRACTOR rather than REASONER — a deliberate choice, not an
+oversight. EXTRACTOR resolves to GPT-5.1 via config/models.yaml, but this
+agent calls the EXTRACTOR role rather than a literal model string, so it
+tracks whatever that role resolves to.
 
 Implements the confidence-based downgrade rule from config/pipeline.yaml
-(mapping.full_coverage_confidence_floor) that spec.md §7.2.7 always
-specified but nothing had implemented yet: coverage_level="full" with
+(mapping.full_coverage_confidence_floor): coverage_level="full" with
 confidence below the floor is downgraded to "partial" and flagged for
-review — this is what "coverage_score" in this step's request maps onto;
-ControlMapping has no separate coverage_score field, `confidence` already
-serves that purpose.
+review. ControlMapping has no separate coverage_score field — `confidence`
+already serves that purpose.
 
-DB-agnostic like the Step 4 agents: returns a typed ControlMapping, does not
-call src/database/supabase_client.py itself.
+DB-agnostic like the other agents in this package: returns a typed
+ControlMapping, does not call src/database/supabase_client.py itself.
 """
 
 from __future__ import annotations
@@ -91,7 +86,7 @@ class MappingAgent:
         coverage_level = CoverageLevel(parsed["coverage_level"])
         confidence = float(parsed["confidence"])
 
-        # spec.md §7.2.7's downgrade rule, implemented here for the first time:
+        # Confidence-based downgrade rule:
         review_state = ReviewState.PROPOSED
         if coverage_level == CoverageLevel.FULL and confidence < self._full_coverage_confidence_floor:
             coverage_level = CoverageLevel.PARTIAL
