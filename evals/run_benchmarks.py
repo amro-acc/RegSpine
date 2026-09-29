@@ -1,4 +1,4 @@
-"""Benchmark runner for the D2 quantitative-reliability evaluation suite.
+"""Benchmark runner for the quantitative-reliability evaluation suite.
 
 Runs all five scorers (evals/scorers/) against the golden sets
 (evals/golden/), aggregates headline metrics, and writes both:
@@ -80,8 +80,8 @@ def _render_report(results: dict) -> str:
         "",
         "10 golden obligation cases (`evals/golden/golden_obligations.json`), "
         "10 golden mapping cases (`evals/golden/golden_mappings.json`), and "
-        "5 golden relation-classification cases (`evals/golden/golden_relations.json`, "
-        "roadmap features 13/14), spanning DORA, NIS2, Basel III, PCI DSS, and GDPR "
+        "5 golden relation-classification cases (`evals/golden/golden_relations.json`), "
+        "spanning DORA, NIS2, Basel III, PCI DSS, and GDPR "
         "synthetic clauses.",
         "",
         "## Headline metrics",
@@ -92,7 +92,7 @@ def _render_report(results: dict) -> str:
         f"| Mapping Accuracy | {_pct(h['mapping_accuracy_pct'])} |",
         f"| Provenance Grounding Rate | {_pct(h['provenance_grounding_rate_pct'])} |",
         f"| Fallback / Review Trigger Rate | {_pct(h['fallback_review_trigger_rate_pct'])} |",
-        f"| Relation Classification Accuracy (features 13/14) | {_pct(h['relation_classification_accuracy_pct'])} |",
+        f"| Relation Classification Accuracy | {_pct(h['relation_classification_accuracy_pct'])} |",
         "",
     ]
 
@@ -163,7 +163,7 @@ def _render_report(results: dict) -> str:
 
     if "error" not in relation:
         lines += _section(
-            "Relation classification detail (`golden_relations.json`, 5 cases -- roadmap features 13/14)",
+            "Relation classification detail (`golden_relations.json`, 5 cases)",
             relation,
             [
                 ("Accuracy", _pct(relation["accuracy"] * 100)),
@@ -171,7 +171,7 @@ def _render_report(results: dict) -> str:
             ],
         )
     else:
-        lines += _section("Relation classification detail (`golden_relations.json`, 5 cases -- roadmap features 13/14)", relation, [])
+        lines += _section("Relation classification detail (`golden_relations.json`, 5 cases)", relation, [])
 
     lines += [
         "## Gates (`tests/test_evals.py`)",
@@ -188,11 +188,9 @@ def _render_report(results: dict) -> str:
 
 def _run_scorer(name: str, fn, gateway: LLMGateway) -> dict:
     """A single scorer's failure (e.g. a real Gemini free-tier daily quota
-    exhaustion, reproduced live: 'Quota exceeded ... limit: 20') must not
-    lose the other three scorers' already-paid-for results -- previously
-    one crash discarded everything and forced a full, costly re-run of
-    scorers that had already succeeded. Returns {"error": str} instead of
-    raising; the report renders that scorer as UNAVAILABLE rather than
+    exhaustion: 'Quota exceeded ... limit: 20') must not lose the other
+    three scorers' already-paid-for results. Returns {"error": str} instead
+    of raising; the report renders that scorer as UNAVAILABLE rather than
     silently omitting it."""
     print(f"Running {name} scorer...")
     try:
@@ -248,7 +246,7 @@ def main() -> None:
     print(f"Mapping Accuracy: {_fmt(mapping_pct, 1)}%")
     print(f"Provenance Grounding Rate: {_fmt(provenance_pct, 1)}% (threshold {PROVENANCE_GROUNDING_THRESHOLD}%)")
     print(f"Fallback/Review Trigger Rate: {_fmt(fallback_pct, 1)}%")
-    print(f"Relation Classification Accuracy (features 13/14): {_fmt(relation_pct, 1)}%")
+    print(f"Relation Classification Accuracy: {_fmt(relation_pct, 1)}%")
 
 
 if __name__ == "__main__":

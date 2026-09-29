@@ -1,7 +1,6 @@
 """Relation-type classification accuracy for ObligationRelationAgent
-(evals/golden/golden_relations.json) -- roadmap features 13 "cross-regulation
-intelligence" and 14 "regulatory contradiction detection", reopened
-2026-09-29.
+(evals/golden/golden_relations.json) -- covers cross-regulation
+intelligence and regulatory contradiction detection.
 
 Calls ObligationRelationAgent.compare() directly on one curated pair at a
 time (not compare_across_groups' full cross-product), since each golden

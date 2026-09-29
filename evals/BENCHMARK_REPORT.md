@@ -2,7 +2,7 @@
 
 Generated: 2026-09-29T06:54:36.989091+00:00
 
-10 golden obligation cases (`evals/golden/golden_obligations.json`), 10 golden mapping cases (`evals/golden/golden_mappings.json`), and 5 golden relation-classification cases (`evals/golden/golden_relations.json`, roadmap features 13/14), spanning DORA, NIS2, Basel III, PCI DSS, and GDPR synthetic clauses.
+10 golden obligation cases (`evals/golden/golden_obligations.json`), 10 golden mapping cases (`evals/golden/golden_mappings.json`), and 5 golden relation-classification cases (`evals/golden/golden_relations.json`), spanning DORA, NIS2, Basel III, PCI DSS, and GDPR synthetic clauses.
 
 ## Headline metrics
 
@@ -12,7 +12,7 @@ Generated: 2026-09-29T06:54:36.989091+00:00
 | Mapping Accuracy | 100.0% |
 | Provenance Grounding Rate | 100.0% |
 | Fallback / Review Trigger Rate | 0.0% |
-| Relation Classification Accuracy (features 13/14) | 100.0% |
+| Relation Classification Accuracy | 100.0% |
 
 ## Extraction detail (`golden_obligations.json`, 10 cases)
 
@@ -50,7 +50,7 @@ Generated: 2026-09-29T06:54:36.989091+00:00
 
 **UNAVAILABLE** — this scorer failed: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}
 
-## Relation classification detail (`golden_relations.json`, 5 cases -- roadmap features 13/14)
+## Relation classification detail (`golden_relations.json`, 5 cases)
 
 | Metric | Value |
 | --- | --- |

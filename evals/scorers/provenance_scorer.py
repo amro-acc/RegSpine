@@ -1,10 +1,10 @@
 """Verifies extracted obligations' verbatim_quote/snippet_hash actually
 trace back to real substrings in their source text -- hallucination rate
 (evals/golden/golden_obligations.json). Reuses the same deterministic
-verify_citation_span() the live pipeline gates on (hard invariants #1-#2),
-run independently here rather than trusting IngestionAgent's own
-self-reported span_verified flag -- a scorer that just echoes the thing it's
-supposed to be checking isn't actually verifying anything.
+verify_citation_span() the live pipeline gates on, run independently here
+rather than trusting IngestionAgent's own self-reported span_verified flag
+-- a scorer that just echoes the thing it's supposed to be checking isn't
+actually verifying anything.
 """
 
 from __future__ import annotations
