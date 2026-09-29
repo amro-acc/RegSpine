@@ -52,7 +52,7 @@ create table pages (
   document_version_id uuid not null references document_versions(id),
   page_no int not null,
   text_content text,
-  -- reserved for the §6.3 D3 roadmap extension; unused/null in this F2/D2 submission:
+  -- reserved for a future OCR/vision extraction path; unused/null for now:
   ocr_content text,
   extraction_method text not null default 'native',  -- native | ocr | vision | reconciled
   reconciliation_score numeric,
@@ -74,8 +74,8 @@ create table clauses (
 );
 
 -- ============ Observability (moved up: obligations/mappings/assessments/gaps
--- all FK to runs(id) — the abridged §11 listing shows this section last, but
--- it has to exist before anything below can reference it) ============
+-- all FK to runs(id), so it has to exist before anything below can
+-- reference it) ============
 create table runs (
   id uuid primary key default gen_random_uuid(),
   pipeline text not null,
@@ -97,7 +97,7 @@ create table obligations (
   trigger_condition text,
   deadline_spec text,
   obligation_type text not null,
-  -- provenance & verification (mandatory on every derived row, spec.md §11)
+  -- provenance & verification, mandatory on every derived row
   confidence numeric not null,
   span_verified boolean not null default false,
   span_verify_method text,
@@ -115,7 +115,8 @@ create table obligations (
     check (provenance ? 'source_file' and provenance ? 'page_number' and provenance ? 'snippet_hash'),
   created_at timestamptz default now()
 );
--- the invariant that carries the reliability claim (hard invariant #1):
+-- this is the constraint that actually carries the reliability claim:
+-- an obligation can never be accepted without a verified span.
 alter table obligations add constraint accepted_requires_verified_span
   check (review_state <> 'accepted' or span_verified = true);
 
@@ -123,7 +124,7 @@ alter table obligations add constraint accepted_requires_verified_span
 -- references bank_entities — see file-header note #1) ============
 create table bank_entities (
   id uuid primary key default gen_random_uuid(),
-  bank_id uuid not null,                       -- tenant/group-level id (spec.md §10.5) — not an FK, a partition key
+  bank_id uuid not null,                       -- tenant/group-level id — not an FK, a partition key
   name text not null,
   jurisdiction text not null,
   licences text[] not null default '{}',
@@ -138,7 +139,7 @@ create table obligation_applicability (
   applies boolean not null,
   driver text not null,                        -- geography | licence | product | threshold
   rationale text not null,
-  cited_profile_attribute text not null,       -- no unsupported applicability (spec.md §7.2.5)
+  cited_profile_attribute text not null,       -- no unsupported applicability claims
   confidence numeric not null
 );
 
@@ -152,10 +153,9 @@ create table controls (
   control_type text check (control_type in ('preventive', 'detective', 'corrective')),
   automation text check (automation in ('manual', 'semi', 'automated')),
   frequency text,
-  source_policy_version_id uuid,               -- conceptually document_versions(id); spec.md §11 leaves it unconstrained
+  source_policy_version_id uuid,               -- conceptually document_versions(id), left unconstrained
   source_page_no int,
-  -- execution + source provenance, added for the invariant #4 resolution —
-  -- spec.md §11 originally gave this table none at all (see schemas.py)
+  -- execution + source provenance, same as the other derived tables (see schemas.py)
   confidence numeric not null,
   review_state text not null default 'proposed'
     check (review_state in ('proposed', 'accepted', 'rejected', 'needs_review')),
@@ -184,7 +184,7 @@ create table obligation_control_map (
   rerank_score numeric,
   created_by_agent text not null,
   model_id text not null,
-  prompt_version text not null,                -- added for the invariant #4 resolution (was missing)
+  prompt_version text not null,
   run_id uuid not null references runs(id),
   scenario_id uuid,
   provenance jsonb not null
@@ -196,7 +196,7 @@ create table evidence_artifacts (
   id uuid primary key default gen_random_uuid(),
   bank_id uuid not null,
   artifact_uri text not null,
-  modality text not null,                      -- pdf|csv|xlsx|log active; png is roadmap (§6.3)
+  modality text not null,                      -- pdf|csv|xlsx|log active; png is roadmap
   period_start date,
   period_end date,
   extracted_facts jsonb,
@@ -220,11 +220,10 @@ create table control_assessments (
   control_id uuid not null references controls(id),
   design_effective boolean,
   operating_effective text check (operating_effective in ('true', 'false', 'unknown')),
-  -- hard invariant #5: operating_effective may never be 'true' without a
-  -- 'sufficient', in-window control_evidence_link row. That check requires a
-  -- join across control_evidence_link, which a column-level CHECK constraint
-  -- cannot express — spec.md §7.2.9 is explicit this is "enforced in code,
-  -- not prompt," meaning application code (not yet built), not the DB either.
+  -- operating_effective can never be 'true' without a 'sufficient',
+  -- in-window control_evidence_link row. That check requires a join across
+  -- control_evidence_link, which a column-level CHECK constraint can't
+  -- express, so it's enforced in application code (not yet built) instead.
   basis text not null,
   exceptions jsonb,
   assessed_at timestamptz default now(),
@@ -245,8 +244,6 @@ create table gaps (
   status text not null default 'open',
   review_state text not null default 'proposed'
     check (review_state in ('proposed', 'accepted', 'rejected', 'needs_review')),
-  -- added for the invariant #4 resolution — spec.md §11 originally gave gaps
-  -- no created_by_agent/model_id/confidence
   confidence numeric not null,
   created_by_agent text not null,
   model_id text not null,
@@ -269,8 +266,6 @@ create table remediations (
   target_date date,
   test_plan text,
   status text not null default 'proposed',
-  -- added for the invariant #4 resolution — spec.md §11 originally gave
-  -- remediations no provenance/run_id at all
   confidence numeric not null,
   review_state text not null default 'proposed'
     check (review_state in ('proposed', 'accepted', 'rejected', 'needs_review')),
@@ -291,8 +286,8 @@ create table monitoring_items (
   trigger_conditions jsonb
 );
 
--- ============ Change & cross-regulation (roadmap: §4 features 2/11/13/14 —
---              schema kept ready, no agent populates these this cycle) ============
+-- ============ Change & cross-regulation (roadmap — schema kept ready,
+--              no agent populates these yet) ============
 create table clause_changes (
   id uuid primary key default gen_random_uuid(),
   from_version_id uuid not null references document_versions(id),
@@ -347,9 +342,8 @@ create table llm_calls (
   cost_usd numeric,
   latency_ms int,
   cache_hit boolean default false,
-  -- added ahead of the Step-2 gateway build: spec.md §7.1.1 says every
-  -- fallback invocation must be logged distinctly, not blended with primary
-  -- calls. Not in spec.md §11's abridged listing; needed for what's being built.
+  -- every fallback invocation must be logged distinctly, not blended with
+  -- primary calls
   fallback_used boolean default false
 );
 
