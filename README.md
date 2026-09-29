@@ -1,6 +1,6 @@
-# RegAgentX — Run Guide
+# RegSpine — Run Guide
 
-How to get RegAgentX running from scratch on a new machine: backend (FastAPI +
+How to get RegSpine running from scratch on a new machine: backend (FastAPI +
 LangGraph), frontend (React/Vite), database (Supabase/Postgres), and local
 components (ChromaDB, SQLite cache). This is a hackathon submission with a
 declared feature freeze — see [§13](#13-not-implemented-yet) for what's
@@ -16,7 +16,7 @@ you can set up independently (§3 onward).
 
 | Tool | Version | Notes |
 | --- | --- | --- |
-| Python | 3.11+ | Per `CLAUDE.md` §5 conventions |
+| Python | 3.11+ | |
 | Node.js | 20 LTS+ (recommended) | Not pinned anywhere in the repo (no `engines` field in `ui/web/package.json`) — 20+ is a safe floor given Vite 8 / React 19 / TypeScript ~6.0 |
 | npm | ships with Node | — |
 | Git | any recent version | — |
@@ -63,8 +63,8 @@ Do not commit these anywhere. They go in your local `.env` only (§4).
 | --- | --- |
 | `GOOGLE_API_KEY` | Free at [Google AI Studio](https://ai.google.dev) — used only for the `JUDGE` role (`judge_pool`, currently `gemini-3.8-flash`), which is low-volume, so the free tier is sufficient |
 
-Everything else (`SQLITE_CACHE_PATH`, `REGAGENTX_ENV`, `REGAGENTX_CACHE`,
-`REGAGENTX_RUN_BUDGET_USD`) is a local runtime flag with a sane default — no
+Everything else (`SQLITE_CACHE_PATH`, `REGSPINE_ENV`, `REGSPINE_CACHE`,
+`REGSPINE_RUN_BUDGET_USD`) is a local runtime flag with a sane default — no
 account needed.
 
 ---
@@ -72,15 +72,14 @@ account needed.
 ## 4. Clone and configure the environment
 
 ```bash
-git clone <repo-url> RegAgentX
-cd RegAgentX
+git clone <repo-url> RegSpine
+cd RegSpine
 cp .env.example .env
 ```
 
 Fill in `.env` with the credentials from §2 and §3. The full variable list
-(with purpose) is documented inline in `.env.example` — it's the authoritative
-source; `CLAUDE.md`'s environment snippet is an abbreviated version of the
-same file.
+(with purpose) is documented inline in `.env.example` — that's the
+authoritative source.
 
 ---
 
@@ -145,8 +144,8 @@ licence correction so DORA obligations aren't filtered out for the EU entity:
 ## 7. Local vector index: seed Chroma from the corpus
 
 The repo ships two small synthetic documents (`corpus/regulations/`,
-`corpus/bank/`) — the real Basel III/DORA/PCI DSS corpus hasn't been acquired
-yet (roadmap item). `chroma_db/` is gitignored and rebuilt deterministically:
+`corpus/bank/`) — the real Basel III/DORA/PCI DSS corpus hasn't been added
+yet. `chroma_db/` is gitignored and rebuilt deterministically:
 
 ```powershell
 make index
@@ -262,9 +261,6 @@ part.
   harmless — only affects Hugging Face Hub rate limits/download speed for the
   embedding/reranker models, which are cached locally after the first run.
   Ignore unless you hit HF rate limits.
-- **`scripts/debug_audit.py` posts to port 8010**: stale reference from
-  before the port became configurable — the current default is 8055. Edit
-  the script's hardcoded URL if you use it.
 
 ---
 
@@ -280,6 +276,5 @@ These `Makefile` targets exist for documented-interface consistency but exit
 | `make faults` | Fault-injection harness not built |
 | `make demo` | No scripted demo-replay harness built |
 
-See `docs/roadmap.md` for what's deliberately out of scope this cycle (OCR,
-multimodal ingestion, cross-provider fallback for `EXTRACTOR`, etc.) versus
-what's just not built yet.
+Also out of scope for now: OCR, multimodal ingestion, and cross-provider
+fallback for `EXTRACTOR`.
