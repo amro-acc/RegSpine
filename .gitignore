@@ -1,18 +1,18 @@
 # Secrets — never commit
 .env
 
-# Local cache / checkpointer db (CLAUDE.md §6 — response cache + LangGraph
-# checkpointer only, never the domain schema; not shared across the team)
+# Local cache / checkpointer db — response cache + LangGraph checkpointer
+# only, never the domain schema; not shared across the team
 cache.db
 cache.db-shm
 cache.db-wal
 
-# Vector index — rebuilt deterministically from corpus/ via `make index`
-# (spec.md §14.2: commit the corpus + build script + manifest hash, not the
-# binary index — avoids daily merge conflicts across 4 developer machines)
+# Vector index — rebuilt deterministically from corpus/ via `make index`.
+# We commit the corpus + build script + manifest hash, not the binary index
+# itself — avoids daily merge conflicts across 4 developer machines.
 chroma_db/
 
-# Model/training checkpoints (CLAUDE.md §6)
+# Model/training checkpoints
 *.ckpt
 
 # Python
@@ -29,7 +29,7 @@ venv/
 .vscode/
 .idea/
 
-# React (TypeScript) + Vite frontend (ui/web/) — spec.md §14.1.2
+# React (TypeScript) + Vite frontend (ui/web/)
 ui/web/node_modules/
 ui/web/dist/
 ui/web/.vite/
