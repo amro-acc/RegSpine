@@ -1,0 +1,20 @@
+# Deterministic clause-reference extraction patterns. 
+# These are evaluated before falling back to an LLM, as regex is faster 
+# and more reliable for known numbering formats.
+#
+# ⚠️ NOTE: These are currently placeholder patterns. They must be tested and 
+# verified against the actual regulatory corpus (Basel III, DORA, PCI DSS v4.0) 
+# and adjusted to match their specific numbering styles once the documents are ingested.
+
+basel:
+  # Matches Basel III consolidated paragraph-based numbering (e.g., "40.12", "CAP10.1").
+  # TODO: Verify exact format against the final document.
+  pattern: '\d+[A-Z]*\d*\.\d+(\.\d+)?'
+
+dora:
+  # Matches DORA article references, e.g., "Art. 9(4)(a)"
+  pattern: 'Art\.\s*\d+(\(\d+\))?(\([a-z]\))?'
+
+pci_dss:
+  # Matches PCI DSS v4.0 section numbering, e.g., "8.3.6"
+  pattern: '\d+\.\d+(\.\d+)?'
