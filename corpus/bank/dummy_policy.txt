@@ -1,0 +1,13 @@
+DUMMY SAMPLE BANK POLICY — synthetic text for pipeline testing only.
+This is not a real control register or policy document. Used to exercise
+ingestion, embedding, and retrieval before the real Meridian bank artifacts
+are built (spec.md §13.2, still pending as of this step).
+
+Control C-1 — Incident escalation procedure
+The bank's operations team escalates any detected system incident to the
+compliance office within 12 hours, logging severity, affected systems, and
+initial containment actions.
+
+Control C-2 — Records retention schedule
+The bank retains all transaction and account records in the archival system
+for seven years, exceeding the minimum regulatory retention period.

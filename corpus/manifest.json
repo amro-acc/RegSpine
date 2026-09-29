@@ -1,0 +1,20 @@
+{
+  "generated_by": "scripts/seed_chroma.py",
+  "generated_at": "2026-09-24T18:24:49.695711+00:00",
+  "documents": [
+    {
+      "filename": "dummy_regulation.txt",
+      "relative_path": "corpus/regulations/dummy_regulation.txt",
+      "type": "regulation",
+      "sha256": "89318993159fd83f8a6817040ee60170e6d2c34883b2a6246c47c26473ba0e76",
+      "collection": "regulatory_obligations"
+    },
+    {
+      "filename": "dummy_policy.txt",
+      "relative_path": "corpus/bank/dummy_policy.txt",
+      "type": "policy",
+      "sha256": "490c216e3628ac98b088147d2d5d1a9cfb7b6ab8303a93e2dc03456c26cd5034",
+      "collection": "internal_controls"
+    }
+  ]
+}

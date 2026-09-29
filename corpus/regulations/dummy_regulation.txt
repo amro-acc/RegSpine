@@ -1,0 +1,12 @@
+DUMMY SAMPLE REGULATION — synthetic text for pipeline testing only.
+This is not a real regulatory document. Used to exercise ingestion,
+embedding, and retrieval before the real Basel/DORA/PCI DSS corpus is
+acquired (spec.md §13.1, still pending as of this step).
+
+Art. 1 — Incident reporting
+A regulated entity must report any material operational incident to the
+supervisory authority within 24 hours of detection.
+
+Art. 2 — Data retention
+A regulated entity must retain transaction records for a minimum of five
+years from the date of the transaction.
