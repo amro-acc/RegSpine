@@ -6,8 +6,9 @@ invalidates old cached responses instead of silently returning
 stale-shaped data.
 
 The REGSPINE_CACHE on/off toggle lives in src/llm/gateway.py (the
-caller), not here — this module doesn't need to know why or when it's
-being called, just how to cache a call.
+caller), not here — this module just exposes `replay_only` so the
+caller can enforce "never touch the live provider" without this
+module needing to know why.
 """
 
 from __future__ import annotations
@@ -87,16 +88,27 @@ def set_cached_response(
         conn.commit()
 
 
+class CacheReplayMiss(RuntimeError):
+    """Raised when replay_only=True and nothing is cached for this call."""
+
+
 def cached_llm_call(
     model_name: str,
     prompt: str,
     schema_version: str,
     call_fn: Callable[[], dict],
     force_refresh: bool = False,
+    replay_only: bool = False,
 ) -> dict:
     """Look up (model_name, prompt, schema_version) in the cache; on a miss
     (or force_refresh), call `call_fn()` — which must return a JSON-serializable
     dict — store the result, and return it either way.
+
+    replay_only=True is the demo-replay mode: only ever return what's
+    already cached, and never call call_fn. A cache miss raises
+    CacheReplayMiss instead of silently falling back to a live call —
+    otherwise "offline-safe demo" could quietly turn into a real API
+    call mid-demo.
 
     `call_fn` takes no arguments by design: callers close over whatever they
     need (the actual API client call). This keeps the cache mechanism itself
@@ -105,6 +117,16 @@ def cached_llm_call(
     """
     init_cache_db()
     cache_key = compute_cache_key(model_name, prompt, schema_version)
+
+    if replay_only:
+        cached = get_cached_response(cache_key)
+        if cached is None:
+            raise CacheReplayMiss(
+                f"REGSPINE_CACHE=on but no cached response for model={model_name!r}, "
+                f"schema_version={schema_version!r} — run once with REGSPINE_CACHE=off "
+                "first to populate the cache, or turn replay off."
+            )
+        return cached
 
     if not force_refresh:
         cached = get_cached_response(cache_key)

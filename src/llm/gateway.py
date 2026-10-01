@@ -19,13 +19,14 @@ Not handled here (deliberately, not an oversight):
 from __future__ import annotations
 
 import logging
+import os
 import random
 import time
 from pathlib import Path
 
 import yaml
 
-from src.core.cache import cached_llm_call
+from src.core.cache import cached_llm_call, compute_cache_key, get_cached_response, init_cache_db
 from src.llm import gemini_client, openai_client
 
 logger = logging.getLogger(__name__)
@@ -35,6 +36,10 @@ DEFAULT_CONFIG_PATH = Path(__file__).resolve().parent.parent.parent / "config" /
 _TRANSIENT_STATUS_CODES = {429, 503}
 _MAX_RETRY_ATTEMPTS = 3
 _BASE_BACKOFF_SECONDS = 1.0
+
+
+def _demo_replay_enabled() -> bool:
+    return os.environ.get("REGSPINE_CACHE", "off").strip().lower() == "on"
 
 
 def _is_transient_provider_error(exc: Exception) -> bool:
@@ -88,7 +93,7 @@ class LLMGateway:
                     "back on."
                 )
             judge_cfg = self._resolve_judge_model(producer_model)
-            result = self._invoke(judge_cfg, prompt, schema_version)
+            result, cache_hit = self._invoke(judge_cfg, prompt, schema_version)
             # Lets judge_agent.py log which model actually judged a finding
             # (review_actions audit trail) without re-deriving the
             # resolution itself — same "enrich the returned dict" pattern
@@ -96,7 +101,7 @@ class LLMGateway:
             # hitl_required. Not cached: added after _invoke() returns, same
             # as that path.
             result["model_id"] = judge_cfg["model"]
-            self._log_call(role=role, model_id=judge_cfg["model"], fallback_used=False)
+            self._log_call(role=role, model_id=judge_cfg["model"], fallback_used=False, cache_hit=cache_hit)
             return result
 
         if role not in self.config:
@@ -105,8 +110,8 @@ class LLMGateway:
         role_cfg = self.config[role]
 
         try:
-            result = self._invoke(role_cfg, prompt, schema_version)
-            self._log_call(role=role, model_id=role_cfg["model"], fallback_used=False)
+            result, cache_hit = self._invoke(role_cfg, prompt, schema_version)
+            self._log_call(role=role, model_id=role_cfg["model"], fallback_used=False, cache_hit=cache_hit)
             return result
         except Exception as primary_error:  # noqa: BLE001 - intentionally broad: any primary failure triggers fallback logic below
             if role != "reasoner":
@@ -125,7 +130,7 @@ class LLMGateway:
                 fallback_cfg["model"],
             )
 
-            result = self._invoke(fallback_cfg, prompt, schema_version)
+            result, cache_hit = self._invoke(fallback_cfg, prompt, schema_version)
 
             # Fallback output never auto-accepts, at any confidence. Forced
             # here, unconditionally — not a suggestion the caller can
@@ -133,10 +138,10 @@ class LLMGateway:
             result["status"] = "proposed"
             result["hitl_required"] = True
 
-            self._log_call(role=role, model_id=fallback_cfg["model"], fallback_used=True)
+            self._log_call(role=role, model_id=fallback_cfg["model"], fallback_used=True, cache_hit=cache_hit)
             return result
 
-    def _invoke(self, model_cfg: dict, prompt: str, schema_version: str) -> dict:
+    def _invoke(self, model_cfg: dict, prompt: str, schema_version: str) -> tuple[dict, bool]:
         provider = model_cfg["provider"]
         model = model_cfg["model"]
 
@@ -151,19 +156,31 @@ class LLMGateway:
                 return openai_client.call(model, prompt, reasoning_effort=model_cfg.get("reasoning_effort"))
             raise ValueError(f"Unknown provider '{provider}' in config/models.yaml")
 
-        # Every call passes through the cache — the point of this class is
-        # zero-cost dev iteration and instant offline demo replay. Retry
-        # only wraps the live call_fn, so cache hits never pay the backoff
-        # cost and only real API calls get the transient-error ladder.
-        return cached_llm_call(
+        # cache_hit is only for the log line below — cached_llm_call() itself
+        # doesn't report hit/miss. init_cache_db() first since this can run
+        # before cached_llm_call ever creates the table on a fresh cache.db.
+        init_cache_db()
+        cache_hit = get_cached_response(compute_cache_key(model, prompt, schema_version)) is not None
+
+        # Every call goes through the cache (cheap dev iteration, offline
+        # demo replay) — retry/backoff only wraps the live call, so a cache
+        # hit never pays that cost. REGSPINE_CACHE=on makes this replay-only:
+        # never touch the live provider, raise on a miss instead of quietly
+        # falling back to a real call.
+        result = cached_llm_call(
             model_name=model,
             prompt=prompt,
             schema_version=schema_version,
             call_fn=lambda: _call_with_retry(_call_fn),
+            replay_only=_demo_replay_enabled(),
         )
+        return result, cache_hit
 
-    def _log_call(self, role: str, model_id: str, fallback_used: bool) -> None:
-        logger.info("llm_call role=%s model=%s fallback_used=%s", role, model_id, fallback_used)
+    def _log_call(self, role: str, model_id: str, fallback_used: bool, cache_hit: bool = False) -> None:
+        logger.info(
+            "llm_call role=%s model=%s fallback_used=%s cache_hit=%s",
+            role, model_id, fallback_used, cache_hit,
+        )
 
     def _provider_for_model(self, model_name: str) -> str:
         for role_cfg in self.config.values():
