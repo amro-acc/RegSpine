@@ -32,6 +32,7 @@ import hashlib
 import logging
 import uuid
 from collections import defaultdict
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -40,6 +41,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
+
+# uvicorn sets up its own loggers but leaves ours alone, so without a
+# handler here every logger.info() under src/ (cache hits, fallback
+# routing, etc.) just disappears. propagate=False stops it printing
+# twice if uvicorn's own handler picks it up too via root.
+_src_logger = logging.getLogger("src")
+_src_logger.setLevel(logging.INFO)
+if not _src_logger.handlers:
+    _handler = logging.StreamHandler()
+    _handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+    _src_logger.addHandler(_handler)
+_src_logger.propagate = False
 
 from src.agents.change_watcher_agent import ChangeWatcherAgent
 from src.agents.obligation_relation_agent import ObligationRelationAgent
@@ -54,7 +67,7 @@ from src.core.schemas import (
     RegulatoryObligation,
     Run,
 )
-from src.database import supabase_client
+from src.database import supabase_client, vector_store
 
 # src.database.supabase_client.get_client() reads SUPABASE_URL/
 # SUPABASE_SERVICE_KEY from os.environ lazily, at first request time, not at
@@ -142,7 +155,20 @@ def _friendly_client_message(exc: Exception) -> str:
     return "The compliance audit pipeline encountered an unexpected error. See the server terminal for full details."
 
 
-app = FastAPI(title="RegSpine API")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # get_embedding_model()/get_reranker() are @lru_cache singletons — the
+    # first call to query_with_rerank() otherwise eats the full cold-load
+    # cost (a few minutes). Doing it here means that happens at startup,
+    # not on whoever's first live audit happens to land.
+    logger.info("Warming embedding model and reranker...")
+    vector_store.get_embedding_model()
+    vector_store.get_reranker()
+    logger.info("Embedding model and reranker warmed.")
+    yield
+
+
+app = FastAPI(title="RegSpine API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
