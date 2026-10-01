@@ -91,6 +91,7 @@ class ControlType(str, Enum):
     PREVENTIVE = "preventive"
     DETECTIVE = "detective"
     CORRECTIVE = "corrective"
+    DIRECTIVE = "directive"  # mandates a required action (e.g. reporting/escalation to a body) rather than preventing, detecting, or fixing something
 
 
 class Automation(str, Enum):

@@ -19,8 +19,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import uuid
 from pathlib import Path
+
+from pydantic import ValidationError
 
 from src.core.schemas import InternalControl, RegulatoryObligation, ReviewState
 from src.llm.gateway import LLMGateway
@@ -28,6 +31,8 @@ from src.verify.span import verify_citation_span
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 PROMPT_PATH = REPO_ROOT / "src" / "prompts" / "ingestion" / "v1.md"
+
+logger = logging.getLogger(__name__)
 
 
 def _load_prompt_template() -> str:
@@ -89,31 +94,39 @@ class IngestionAgent:
             span = verify_citation_span(source_text, quote)
             snippet_hash = hashlib.sha256(quote.encode("utf-8")).hexdigest()
 
-            results.append(
-                RegulatoryObligation(
-                    clause_id=clause_id,
-                    obligation_text=candidate["obligation_text"],
-                    verbatim_quote=quote,
-                    modality=candidate["modality"],
-                    actor=candidate.get("actor"),
-                    trigger_condition=candidate.get("trigger_condition"),
-                    deadline_spec=candidate.get("deadline_spec"),
-                    obligation_type=candidate["obligation_type"],
-                    confidence=candidate["confidence"],
-                    span_verified=span["verified"],
-                    span_verify_method=span["method"] if span["method"] != "none" else None,
-                    review_state=ReviewState.PROPOSED if span["verified"] else ReviewState.NEEDS_REVIEW,
-                    created_by_agent="ingestion_agent",
-                    model_id=self._model_id(),
-                    prompt_version=self.PROMPT_VERSION,
-                    run_id=run_id,
-                    provenance={
-                        "source_file": source_file,
-                        "page_number": page_number,
-                        "snippet_hash": snippet_hash,
-                    },
+            try:
+                results.append(
+                    RegulatoryObligation(
+                        clause_id=clause_id,
+                        obligation_text=candidate["obligation_text"],
+                        verbatim_quote=quote,
+                        modality=candidate["modality"],
+                        actor=candidate.get("actor"),
+                        trigger_condition=candidate.get("trigger_condition"),
+                        deadline_spec=candidate.get("deadline_spec"),
+                        obligation_type=candidate["obligation_type"],
+                        confidence=candidate["confidence"],
+                        span_verified=span["verified"],
+                        span_verify_method=span["method"] if span["method"] != "none" else None,
+                        review_state=ReviewState.PROPOSED if span["verified"] else ReviewState.NEEDS_REVIEW,
+                        created_by_agent="ingestion_agent",
+                        model_id=self._model_id(),
+                        prompt_version=self.PROMPT_VERSION,
+                        run_id=run_id,
+                        provenance={
+                            "source_file": source_file,
+                            "page_number": page_number,
+                            "snippet_hash": snippet_hash,
+                        },
+                    )
                 )
-            )
+            except (ValidationError, KeyError):
+                # The model didn't follow the schema for this one candidate —
+                # skip it rather than let it take down the whole ingestion run.
+                logger.warning(
+                    "Skipping malformed obligation candidate in run_id=%s (source_file=%s): %r",
+                    run_id, source_file, candidate,
+                )
         return results
 
     def extract_controls(
@@ -144,30 +157,38 @@ class IngestionAgent:
                 span_verified, span_verify_method, review_state = False, None, ReviewState.PROPOSED
                 snippet_hash = hashlib.sha256(source_text.encode("utf-8")).hexdigest()
 
-            results.append(
-                InternalControl(
-                    bank_id=bank_id,
-                    control_ref=candidate["control_ref"],
-                    title=candidate["title"],
-                    design_description=candidate.get("design_description"),
-                    owner=candidate.get("owner"),
-                    control_type=candidate.get("control_type"),
-                    automation=candidate.get("automation"),
-                    frequency=candidate.get("frequency"),
-                    verbatim_quote=quote,
-                    span_verified=span_verified,
-                    span_verify_method=span_verify_method,
-                    confidence=candidate["confidence"],
-                    review_state=review_state,
-                    created_by_agent="ingestion_agent",
-                    model_id=self._model_id(),
-                    prompt_version=self.PROMPT_VERSION,
-                    run_id=run_id,
-                    provenance={
-                        "source_file": source_file,
-                        "page_number": page_number,
-                        "snippet_hash": snippet_hash,
-                    },
+            try:
+                results.append(
+                    InternalControl(
+                        bank_id=bank_id,
+                        control_ref=candidate["control_ref"],
+                        title=candidate["title"],
+                        design_description=candidate.get("design_description"),
+                        owner=candidate.get("owner"),
+                        control_type=candidate.get("control_type"),
+                        automation=candidate.get("automation"),
+                        frequency=candidate.get("frequency"),
+                        verbatim_quote=quote,
+                        span_verified=span_verified,
+                        span_verify_method=span_verify_method,
+                        confidence=candidate["confidence"],
+                        review_state=review_state,
+                        created_by_agent="ingestion_agent",
+                        model_id=self._model_id(),
+                        prompt_version=self.PROMPT_VERSION,
+                        run_id=run_id,
+                        provenance={
+                            "source_file": source_file,
+                            "page_number": page_number,
+                            "snippet_hash": snippet_hash,
+                        },
+                    )
                 )
-            )
+            except (ValidationError, KeyError):
+                # The model didn't follow the schema for this one candidate —
+                # skip it rather than let it take down the whole ingestion run.
+                logger.warning(
+                    "Skipping malformed control candidate in run_id=%s (source_file=%s): %r",
+                    run_id, source_file, candidate,
+                )
         return results
