@@ -138,6 +138,11 @@ class AuditAgent:
         }
         risk_score, risk_band = score_and_band(risk_factors)
 
+        # REASONER-fallback output always routes to HITL, no matter how
+        # confident it reports being — gateway.py sets this when GPT-5.1
+        # failed and GPT-5.6-Luna answered instead.
+        review_state = ReviewState.NEEDS_REVIEW if response.get("hitl_required") else ReviewState.PROPOSED
+
         return GapFinding(
             obligation_id=obligation.id,
             gap_class=gap_class,
@@ -147,7 +152,7 @@ class AuditAgent:
             risk_band=risk_band,
             status="open",
             confidence=mapping.confidence if mapping else parsed.get("confidence", 0.9),
-            review_state=ReviewState.PROPOSED,
+            review_state=review_state,
             created_by_agent="audit_agent",
             model_id=self._model_id(),
             prompt_version=self.PROMPT_VERSION,
