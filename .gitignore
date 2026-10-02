@@ -42,3 +42,8 @@ npm-debug.log*
 # needs (see its own header comment). A per-developer override still goes
 # in ui/web/.env.local, which the `*.local` rule above already ignores.
 !ui/web/.env
+
+# Ignore common document formats that are not part of the codebase
+*.doc
+*.docx
+*.pdf
