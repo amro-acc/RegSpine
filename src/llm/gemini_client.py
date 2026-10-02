@@ -1,38 +1,24 @@
 """Thin Gemini client. Called only by src/llm/gateway.py — never directly by
-agents. Reads GOOGLE_API_KEY from the environment explicitly and passes it
-straight to google.genai.Client.
+agents. Reads GOOGLE_API_KEY from the environment and passes it straight to
+google.genai.Client.
 
-We call the official `google-genai` SDK directly instead of going through
-langchain_google_genai. Google's Gemini API keys moved from the legacy
-"Standard Key" format (AIza...) to the new "Auth Key" format (AQ....), and
-Auth keys work fine against the native generativelanguage.googleapis.com
-endpoint via the official SDK — but langchain_google_genai's
-ChatGoogleGenerativeAI wrapper rejected a freshly-issued, correctly-formatted
-AQ.-prefixed key ("API key not valid"). That's a third-party-tool
-auth-handling gap (matches reports of tools hardcoded around the old AIza
-format), not an invalid key — calling the SDK directly removes that layer
-entirely rather than working around it.
+We call the official google-genai SDK directly instead of going through
+langchain_google_genai. Google moved API keys from the old "AIza..." format
+to a new "AQ...." one, and a freshly-issued AQ key works fine against the
+real API — but langchain's ChatGoogleGenerativeAI wrapper rejected it with
+"API key not valid", seemingly still hardcoded around the old format. Going
+straight to the SDK sidesteps that instead of fighting it.
 
-Gemini 3 models explicitly warn against setting temperature below 1.0
-("may lead to unexpected behavior, such as looping or degraded performance,
-particularly in complex mathematical or reasoning tasks" —
-ai.google.dev/gemini-api/docs/gemini-3) — this applies to every model in
-this family (gemini-3.x), including judge_pool's gemini-3.8-flash.
-`temperature` is therefore optional here and left unset (Gemini's own
-default, 1.0) unless a config entry explicitly overrides it.
+temperature is left unset by default (Gemini's own default, 1.0) unless a
+config entry says otherwise — Gemini 3 models (the whole gemini-3.x family,
+including judge_pool's gemini-3.8-flash) warn that going below 1.0 can
+cause looping or worse reasoning, so there's no reason to override it.
 
-Google's free-tier quota (generate_content_free_tier_requests) is per API
-key/project/model, not per account — a single key's 20/day cap is a real
-risk when judge_pool is the only Gemini-dependent role in the system.
-`GOOGLE_API_KEY` may hold a comma-separated list of keys (each from its own
-Google AI Studio project, each with its own independent 20/day allotment) —
-this module stays "sticky" on one key across calls (spends that key's full
-daily budget before moving on, rather than spreading load pre-emptively
-across keys that don't need it yet) and only rotates to the next key when
-the current one specifically reports RESOURCE_EXHAUSTED (429). A transient
-503 "high demand" is a different failure mode entirely (every key would hit
-the same Google-side capacity issue) and is left to gateway.py's existing
-backoff-retry ladder on the same key, not a reason to rotate.
+GOOGLE_API_KEY can hold a comma-separated list of keys. Worth having: the
+free tier only gives 20 requests/day per key/project, not per account, and
+judge_pool burns through that fast once it's actually in use. We stick to
+one key until it hits a 429 (quota exhausted), then move to the next —
+see _is_quota_exhausted for why a 503 doesn't trigger the same switch.
 """
 
 from __future__ import annotations
@@ -51,11 +37,10 @@ def _api_keys() -> list[str]:
 
 
 def _is_quota_exhausted(exc: Exception) -> bool:
-    """RESOURCE_EXHAUSTED (429, daily/per-key quota) — rotating to a
-    different key can fix this. Distinct from a transient 503 "high demand"
-    (status UNAVAILABLE), where every key would hit the same Google-side
-    capacity issue and rotating wouldn't help — that stays gateway.py's
-    backoff-retry job on the same key."""
+    """429 RESOURCE_EXHAUSTED means this specific key is out of quota for
+    the day — rotating fixes it. A 503 "high demand" is Google itself being
+    overloaded, which every key would hit equally, so that's gateway.py's
+    retry/backoff job instead, not ours."""
     return getattr(exc, "code", None) == 429 and getattr(exc, "status", "") == "RESOURCE_EXHAUSTED"
 
 
