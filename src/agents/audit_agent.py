@@ -30,12 +30,19 @@ case.
 
 risk_score/risk_band are computed by src/risk/scoring.py from model-supplied
 risk_factors — never taken directly from the model.
+
+review_state also routes to NEEDS_REVIEW below config/pipeline.yaml's
+confidence_bands.proposed_floor — a low-confidence gap deserves a human
+look even when REASONER answered directly and hitl_required never got
+set.
 """
 
 from __future__ import annotations
 
 import uuid
 from pathlib import Path
+
+import yaml
 
 from src.agents.ingestion_agent import parse_json_response
 from src.core.schemas import ControlMapping, CoverageLevel, GapFinding, InternalControl, RegulatoryObligation, ReviewState
@@ -44,6 +51,7 @@ from src.risk.scoring import score_and_band
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 PROMPT_PATH = REPO_ROOT / "src" / "prompts" / "audit" / "v1.md"
+PIPELINE_CONFIG_PATH = REPO_ROOT / "config" / "pipeline.yaml"
 
 _DETERMINISTIC_GAP_CLASS_BY_COVERAGE = {
     CoverageLevel.NONE: "no_control",
@@ -66,12 +74,18 @@ def _load_prompt_template() -> str:
     return PROMPT_PATH.read_text(encoding="utf-8")
 
 
+def _load_pipeline_config() -> dict:
+    with open(PIPELINE_CONFIG_PATH, encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+
 class AuditAgent:
     PROMPT_VERSION = "v1"
 
     def __init__(self, gateway: LLMGateway | None = None):
         self.gateway = gateway or LLMGateway()
         self._prompt_template = _load_prompt_template()
+        self._needs_review_confidence_floor = _load_pipeline_config()["confidence_bands"]["proposed_floor"]
 
     def _model_id(self) -> str:
         return self.gateway.config["reasoner"]["model"]
@@ -137,11 +151,19 @@ class AuditAgent:
             "remediation_urgency": 3,
         }
         risk_score, risk_band = score_and_band(risk_factors)
+        confidence = mapping.confidence if mapping else parsed.get("confidence", 0.9)
 
-        # REASONER-fallback output always routes to HITL, no matter how
-        # confident it reports being — gateway.py sets this when GPT-5.1
-        # failed and GPT-5.6-Luna answered instead.
-        review_state = ReviewState.NEEDS_REVIEW if response.get("hitl_required") else ReviewState.PROPOSED
+        # Two independent reasons to route to HITL, either one is enough:
+        # REASONER-fallback output always goes to review no matter how
+        # confident it reports being (gateway.py sets hitl_required when
+        # GPT-5.1 failed and GPT-5.6-Luna answered instead), and a
+        # low-confidence finding deserves a human look even when GPT-5.1
+        # answered directly and hitl_required never got set.
+        review_state = (
+            ReviewState.NEEDS_REVIEW
+            if response.get("hitl_required") or confidence < self._needs_review_confidence_floor
+            else ReviewState.PROPOSED
+        )
 
         return GapFinding(
             obligation_id=obligation.id,
@@ -151,7 +173,7 @@ class AuditAgent:
             risk_score=risk_score,
             risk_band=risk_band,
             status="open",
-            confidence=mapping.confidence if mapping else parsed.get("confidence", 0.9),
+            confidence=confidence,
             review_state=review_state,
             created_by_agent="audit_agent",
             model_id=self._model_id(),

@@ -168,6 +168,71 @@ def test_audit_agent_routes_to_gpt51_and_produces_valid_gap_finding():
     assert gap.model_id == "gpt-5.1"
 
 
+def test_audit_agent_routes_low_confidence_gap_to_needs_review():
+    obligation = _make_obligation()
+    control = _make_control()
+    from src.core.schemas import ControlMapping
+
+    # 0.4 is below config/pipeline.yaml's confidence_bands.proposed_floor (0.60).
+    mapping = ControlMapping(
+        obligation_id=obligation.id,
+        control_id=control.id,
+        coverage_level=CoverageLevel.PARTIAL,
+        rationale="Ambiguous — policy text is vague about scope/frequency",
+        confidence=0.4,
+        created_by_agent="mapping_agent",
+        model_id="gpt-5.1",
+        prompt_version="v1",
+        run_id=uuid.uuid4(),
+        provenance=PROV,
+    )
+    fake_response = {"content": json.dumps({
+        "has_gap": True,
+        "narrative": "Borderline — policy leaves frequency to the IT team's discretion",
+        "risk_factors": {
+            "regulatory_severity": 3, "enforcement_likelihood": 3,
+            "business_exposure": 3, "control_weakness": 3, "remediation_urgency": 3,
+        },
+    })}
+
+    with mock.patch("src.llm.openai_client.call", return_value=fake_response):
+        agent = AuditAgent(gateway=LLMGateway())
+        gap = agent.audit(obligation, control, mapping, run_id=uuid.uuid4())
+
+    assert gap is not None
+    assert gap.confidence == 0.4
+    assert gap.review_state == ReviewState.NEEDS_REVIEW, "low-confidence gaps must route to human review"
+
+
+def test_audit_agent_keeps_proposed_at_confidence_floor_boundary():
+    obligation = _make_obligation()
+    control = _make_control()
+    from src.core.schemas import ControlMapping
+
+    # Exactly 0.60 -- the floor itself is still "proposed", only strictly
+    # below it is "needs_review" (confidence_bands: "0.60-0.85 -> proposed").
+    mapping = ControlMapping(
+        obligation_id=obligation.id,
+        control_id=control.id,
+        coverage_level=CoverageLevel.PARTIAL,
+        rationale="r",
+        confidence=0.6,
+        created_by_agent="mapping_agent",
+        model_id="gpt-5.1",
+        prompt_version="v1",
+        run_id=uuid.uuid4(),
+        provenance=PROV,
+    )
+    fake_response = {"content": json.dumps({"has_gap": True, "narrative": "n", "risk_factors": None})}
+
+    with mock.patch("src.llm.openai_client.call", return_value=fake_response):
+        agent = AuditAgent(gateway=LLMGateway())
+        gap = agent.audit(obligation, control, mapping, run_id=uuid.uuid4())
+
+    assert gap is not None
+    assert gap.review_state == ReviewState.PROPOSED
+
+
 def test_audit_agent_returns_none_when_full_coverage_and_no_gap_found():
     obligation = _make_obligation()
     control = _make_control()
