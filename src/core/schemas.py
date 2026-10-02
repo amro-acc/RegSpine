@@ -122,7 +122,7 @@ class OperatingEffective(str, Enum):
 
 
 class ChangeType(str, Enum):
-    """Roadmap — no agent populates this yet."""
+    """Set by change_watcher_agent.py when comparing two versions of a regulation."""
 
     ADDED = "added"
     REMOVED = "removed"
@@ -132,7 +132,7 @@ class ChangeType(str, Enum):
 
 
 class Materiality(str, Enum):
-    """Roadmap — no agent populates this yet."""
+    """Set by change_watcher_agent.py — how significant a detected change is."""
 
     HIGH = "high"
     MEDIUM = "medium"
@@ -141,7 +141,7 @@ class Materiality(str, Enum):
 
 
 class RelationType(str, Enum):
-    """Roadmap — no agent populates this yet."""
+    """Set by obligation_relation_agent.py when two obligations overlap or conflict."""
 
     OVERLAPS = "overlaps"
     CONFLICTS_WITH = "conflicts_with"
@@ -562,11 +562,11 @@ class MonitoringItem(BaseModel):
     trigger_conditions: dict | None = None
 
 
-# ============ Change & cross-regulation — roadmap, schema kept ready ============
+# ============ Change & cross-regulation ============
 
 
 class ClauseChange(BaseModel):
-    """Roadmap — no agent populates this yet."""
+    """One row per detected change between two document versions — populated by change_watcher_agent.py."""
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     from_version_id: uuid.UUID
@@ -580,7 +580,7 @@ class ClauseChange(BaseModel):
 
 
 class ObligationRelation(BaseModel):
-    """Roadmap — no agent populates this yet."""
+    """Cross-regulation overlap/conflict between two obligations — populated by obligation_relation_agent.py."""
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     obligation_a: uuid.UUID
