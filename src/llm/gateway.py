@@ -34,8 +34,17 @@ logger = logging.getLogger(__name__)
 DEFAULT_CONFIG_PATH = Path(__file__).resolve().parent.parent.parent / "config" / "models.yaml"
 
 _TRANSIENT_STATUS_CODES = {429, 503}
-_MAX_RETRY_ATTEMPTS = 3
-_BASE_BACKOFF_SECONDS = 1.0
+_DEFAULT_MAX_RETRY_ATTEMPTS = 3
+_DEFAULT_BASE_BACKOFF_SECONDS = 1.0
+
+# Gemini's free-tier 503 "high demand" spikes run longer than a quick blip
+# (Google's own error text: "usually temporary... try again later") --
+# give judge_pool's calls real time to ride one out (~60s total) instead of
+# giving up after ~7s like every other provider gets. Scoped to the google
+# provider rather than hardcoded to "judge" specifically, since that's the
+# actual cause -- it just happens to be judge_pool's model today.
+_GEMINI_MAX_RETRY_ATTEMPTS = 6
+_GEMINI_BASE_BACKOFF_SECONDS = 2.0
 
 
 def _demo_replay_enabled() -> bool:
@@ -49,20 +58,24 @@ def _is_transient_provider_error(exc: Exception) -> bool:
     return code in _TRANSIENT_STATUS_CODES
 
 
-def _call_with_retry(call_fn):
+def _call_with_retry(
+    call_fn,
+    max_attempts: int = _DEFAULT_MAX_RETRY_ATTEMPTS,
+    base_backoff: float = _DEFAULT_BASE_BACKOFF_SECONDS,
+):
     """Bounded exponential backoff + jitter on 429/503 only — any other
     error (auth, malformed request, etc.) is not transient and re-raises
     immediately rather than wasting retries on something backoff can't fix."""
-    for attempt in range(_MAX_RETRY_ATTEMPTS):
+    for attempt in range(max_attempts):
         try:
             return call_fn()
         except Exception as exc:  # noqa: BLE001 - re-raised below when not transient/exhausted
-            if not _is_transient_provider_error(exc) or attempt == _MAX_RETRY_ATTEMPTS - 1:
+            if not _is_transient_provider_error(exc) or attempt == max_attempts - 1:
                 raise
-            backoff = _BASE_BACKOFF_SECONDS * (2**attempt) + random.uniform(0, 0.5)
+            backoff = base_backoff * (2**attempt) + random.uniform(0, 0.5)
             logger.warning(
                 "Transient provider error (%s); retrying in %.1fs (attempt %d/%d)",
-                exc, backoff, attempt + 1, _MAX_RETRY_ATTEMPTS,
+                exc, backoff, attempt + 1, max_attempts,
             )
             time.sleep(backoff)
 
@@ -156,6 +169,13 @@ class LLMGateway:
                 return openai_client.call(model, prompt, reasoning_effort=model_cfg.get("reasoning_effort"))
             raise ValueError(f"Unknown provider '{provider}' in config/models.yaml")
 
+        if provider == "google":
+            max_retry_attempts = _GEMINI_MAX_RETRY_ATTEMPTS
+            base_backoff_seconds = _GEMINI_BASE_BACKOFF_SECONDS
+        else:
+            max_retry_attempts = _DEFAULT_MAX_RETRY_ATTEMPTS
+            base_backoff_seconds = _DEFAULT_BASE_BACKOFF_SECONDS
+
         # cache_hit is only for the log line below — cached_llm_call() itself
         # doesn't report hit/miss. init_cache_db() first since this can run
         # before cached_llm_call ever creates the table on a fresh cache.db.
@@ -171,7 +191,7 @@ class LLMGateway:
             model_name=model,
             prompt=prompt,
             schema_version=schema_version,
-            call_fn=lambda: _call_with_retry(_call_fn),
+            call_fn=lambda: _call_with_retry(_call_fn, max_attempts=max_retry_attempts, base_backoff=base_backoff_seconds),
             replay_only=_demo_replay_enabled(),
         )
         return result, cache_hit
