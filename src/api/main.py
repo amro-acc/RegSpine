@@ -33,6 +33,7 @@ import logging
 import uuid
 from collections import defaultdict
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -62,9 +63,12 @@ from src.core.schemas import (
     ControlMapping,
     DocClass,
     DocumentVersion,
+    GapFinding,
     InternalControl,
     RegulatoryDocument,
     RegulatoryObligation,
+    ReviewState,
+    RiskSeverity,
     Run,
 )
 from src.database import supabase_client, vector_store
@@ -575,3 +579,173 @@ def get_lineage(run_id: str) -> dict:
     ]
 
     return {"run_id": run_id, "obligations": hierarchy}
+
+
+# ============ HITL review queue — scoped to gaps only for v1
+# (review_actions.entity_table stays polymorphic in the schema, but every
+# query/contract here is gap-specific; obligations/controls/mappings can
+# get their own review surface later without touching this one). Mounted
+# at both /api/v1/review (this app's own convention — matches /api/v1/audit,
+# /api/v1/bank_entities) and bare /review (the path named in the original
+# spec's declared API surface), same functions, so neither caller is
+# wrong. ============
+
+_VALID_REVIEW_ACTIONS = {"accept", "reject", "amend"}
+_AMENDABLE_GAP_FIELDS = {"risk_band", "narrative", "gap_class"}
+
+
+class ReviewQueueItem(BaseModel):
+    id: str
+    run_id: str
+    obligation_id: str
+    obligation_text: str
+    verbatim_quote: str | None = None
+    gap_class: str
+    narrative: str
+    risk_score: int
+    risk_band: str
+    status: str
+    confidence: float
+    review_state: str
+
+
+class ReviewSubmission(BaseModel):
+    gap_id: str
+    reviewer: str
+    action: str  # "accept" | "reject" | "amend"
+    adjusted_fields: dict | None = None  # amend only — e.g. {"risk_band": "HIGH"}
+    note: str | None = None
+
+
+class ReviewActionResponse(BaseModel):
+    gap_id: str
+    review_state: str
+    status: str
+    gap_class: str
+    risk_band: str
+    narrative: str
+
+
+@app.get("/api/v1/review", response_model=list[ReviewQueueItem])
+@app.get("/review", response_model=list[ReviewQueueItem])
+def list_review_queue() -> list[ReviewQueueItem]:
+    """Every gap currently sitting in review_state='needs_review' -- the
+    HITL queue. A global queue across all runs, not scoped to one, since a
+    reviewer works through this independently of any single audit."""
+    gap_rows = supabase_client.list_gaps(review_state=ReviewState.NEEDS_REVIEW.value)
+
+    items = []
+    for gap in gap_rows:
+        obligation = supabase_client.get_obligation(uuid.UUID(gap["obligation_id"]))
+        items.append(
+            ReviewQueueItem(
+                id=gap["id"],
+                run_id=gap["run_id"],
+                obligation_id=gap["obligation_id"],
+                obligation_text=obligation["obligation_text"] if obligation else "(obligation not found)",
+                verbatim_quote=obligation["verbatim_quote"] if obligation else None,
+                gap_class=gap["gap_class"],
+                narrative=gap["narrative"],
+                risk_score=gap["risk_score"],
+                risk_band=gap["risk_band"],
+                status=gap["status"],
+                confidence=gap["confidence"],
+                review_state=gap["review_state"],
+            )
+        )
+    return items
+
+
+@app.post("/api/v1/review", response_model=ReviewActionResponse)
+@app.post("/review", response_model=ReviewActionResponse)
+def submit_review(payload: ReviewSubmission) -> ReviewActionResponse:
+    """Human accept/reject/amend on a gap, mirroring judge_agent.py's own
+    review_actions write (same table, same accept/reject/amend vocabulary)
+    so AI-judge and human reviews share one audit trail:
+      - accept: review_state -> accepted, status untouched.
+      - reject: review_state -> rejected, status -> disputed (same signal
+        JudgeAgent's reject already uses, so remediation_node's existing
+        `if gap.status == "disputed": continue` check applies here too --
+        no new orchestration logic needed for a rejection made after the
+        fact, same as it already works for the AI judge's own rejections).
+      - amend: apply adjusted_fields (risk_band/narrative/gap_class only),
+        review_state -> accepted.
+    """
+    if payload.action not in _VALID_REVIEW_ACTIONS:
+        raise HTTPException(
+            status_code=422, detail=f"action must be one of {sorted(_VALID_REVIEW_ACTIONS)}"
+        )
+
+    try:
+        gap_uuid = uuid.UUID(payload.gap_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="gap_id must be a UUID") from exc
+
+    gap_row = supabase_client.get_gap(gap_uuid)
+    if gap_row is None:
+        raise HTTPException(status_code=404, detail=f"gap_id '{payload.gap_id}' not found")
+
+    gap = GapFinding(**gap_row)
+    original_output = {
+        "gap_class": gap.gap_class,
+        "risk_band": gap.risk_band.value,
+        "narrative": gap.narrative,
+        "status": gap.status,
+        "review_state": gap.review_state.value,
+    }
+
+    if payload.action == "amend":
+        if not payload.adjusted_fields:
+            raise HTTPException(status_code=422, detail="adjusted_fields is required when action='amend'")
+        unknown_fields = set(payload.adjusted_fields) - _AMENDABLE_GAP_FIELDS
+        if unknown_fields:
+            raise HTTPException(
+                status_code=422,
+                detail=f"adjusted_fields may only contain {sorted(_AMENDABLE_GAP_FIELDS)}, "
+                f"got unexpected: {sorted(unknown_fields)}",
+            )
+        updates = dict(payload.adjusted_fields)
+        if "risk_band" in updates:
+            try:
+                updates["risk_band"] = RiskSeverity(updates["risk_band"])
+            except ValueError as exc:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"risk_band must be one of {[s.value for s in RiskSeverity]}",
+                ) from exc
+        updates["review_state"] = ReviewState.ACCEPTED
+        gap = gap.model_copy(update=updates)
+    elif payload.action == "accept":
+        gap = gap.model_copy(update={"review_state": ReviewState.ACCEPTED})
+    else:  # reject
+        gap = gap.model_copy(update={"review_state": ReviewState.REJECTED, "status": "disputed"})
+
+    supabase_client.update_gap(gap)
+
+    supabase_client.insert_review_action(
+        {
+            "entity_table": "gaps",
+            "entity_id": str(gap.id),
+            "reviewer": payload.reviewer,
+            "action": payload.action,
+            "original_output": original_output,
+            "corrected_output": {
+                "gap_class": gap.gap_class,
+                "risk_band": gap.risk_band.value,
+                "narrative": gap.narrative,
+                "status": gap.status,
+                "review_state": gap.review_state.value,
+            },
+            "note": payload.note,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+    )
+
+    return ReviewActionResponse(
+        gap_id=str(gap.id),
+        review_state=gap.review_state.value,
+        status=gap.status,
+        gap_class=gap.gap_class,
+        risk_band=gap.risk_band.value,
+        narrative=gap.narrative,
+    )

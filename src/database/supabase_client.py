@@ -331,10 +331,12 @@ def get_gap(gap_id: uuid.UUID) -> dict | None:
     return response.data if response else None
 
 
-def list_gaps(status: str | None = None, limit: int = 100) -> list[dict]:
+def list_gaps(status: str | None = None, review_state: str | None = None, limit: int = 100) -> list[dict]:
     query = get_client().table(TABLE_GAPS).select("*").limit(limit)
     if status is not None:
         query = query.eq("status", status)
+    if review_state is not None:
+        query = query.eq("review_state", review_state)
     return query.execute().data
 
 

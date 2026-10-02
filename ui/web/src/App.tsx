@@ -1,10 +1,19 @@
 import { useState, useCallback, useEffect } from "react";
-import { Play, Sparkles, ShieldCheck, Loader2, AlertTriangle, GitCompare, Scale, Plus, X } from "lucide-react";
+import { Play, Sparkles, ShieldCheck, Loader2, AlertTriangle, GitCompare, Scale, Plus, X, ClipboardCheck } from "lucide-react";
 import LineageGraph from "./components/LineageGraph";
 import ProvenanceInspector from "./components/ProvenanceInspector";
 import ChangeDiffPanel from "./components/ChangeDiffPanel";
 import ObligationRelationsPanel from "./components/ObligationRelationsPanel";
-import { runAudit, getLineage, diffChanges, findObligationRelations, listBankEntities } from "./api";
+import ReviewQueuePanel from "./components/ReviewQueuePanel";
+import {
+  runAudit,
+  getLineage,
+  diffChanges,
+  findObligationRelations,
+  listBankEntities,
+  listReviewQueue,
+  submitReview,
+} from "./api";
 import type {
   AuditResponse,
   BankEntitySummary,
@@ -12,6 +21,8 @@ import type {
   LineageResponse,
   ObligationRelationGroupRequest,
   ObligationRelationsResponse,
+  ReviewQueueItem,
+  ReviewSubmission,
   SelectedNode,
 } from "./types";
 
@@ -91,11 +102,51 @@ function App() {
   const [relationsResponse, setRelationsResponse] = useState<ObligationRelationsResponse | null>(null);
   const [relationsError, setRelationsError] = useState<string | null>(null);
 
+  // HITL review queue, via GET/POST /api/v1/review -- gaps sitting in
+  // review_state="needs_review" that a human needs to accept/reject/amend.
+  // Global across runs (not scoped to the run currently shown), so it's
+  // loaded on mount and refreshed after every submission, not tied to
+  // runComplianceAudit the way the diff/relations panels are.
+  const [reviewQueue, setReviewQueue] = useState<ReviewQueueItem[]>([]);
+  const [reviewQueueError, setReviewQueueError] = useState<string | null>(null);
+  const [submittingReviewId, setSubmittingReviewId] = useState<string | null>(null);
+
+  const refreshReviewQueue = useCallback(() => {
+    listReviewQueue()
+      .then(setReviewQueue)
+      .catch((err) => setReviewQueueError(err instanceof Error ? err.message : "Unknown error"));
+  }, []);
+
   useEffect(() => {
     listBankEntities()
       .then(setBankEntities)
       .catch(() => setBankEntities([]));
-  }, []);
+    refreshReviewQueue();
+  }, [refreshReviewQueue]);
+
+  const handleSubmitReview = useCallback(
+    async (submission: ReviewSubmission) => {
+      setSubmittingReviewId(submission.gap_id);
+      setReviewQueueError(null);
+      try {
+        await submitReview(submission);
+        // Reviewed gap leaves the "needs_review" queue either way (accept,
+        // reject, and amend all resolve it to "accepted"/"rejected"), and
+        // the lineage graph's node badges (LineageGraph's reviewStateBadge)
+        // need the same fresh data to show the new colour immediately.
+        refreshReviewQueue();
+        if (auditResponse) {
+          const lineageResult = await getLineage(auditResponse.run_id);
+          setLineage(lineageResult);
+        }
+      } catch (err) {
+        setReviewQueueError(err instanceof Error ? err.message : "Unknown error");
+      } finally {
+        setSubmittingReviewId(null);
+      }
+    },
+    [auditResponse, refreshReviewQueue]
+  );
 
   const loadSampleScenario = useCallback(() => {
     setRegulationText(SAMPLE_REGULATION_TEXT);
@@ -391,6 +442,26 @@ function App() {
                 />
               </div>
             )}
+          </div>
+
+          <div className="mt-2 border-t border-gray-200 pt-3">
+            <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-gray-800">
+              <ClipboardCheck size={14} className="text-indigo-600" />
+              Human review queue
+              {reviewQueue.length > 0 && (
+                <span className="rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700">
+                  {reviewQueue.length}
+                </span>
+              )}
+            </div>
+
+            {reviewQueueError && (
+              <div className="mb-1.5">
+                <ErrorBanner message={reviewQueueError} />
+              </div>
+            )}
+
+            <ReviewQueuePanel items={reviewQueue} submittingId={submittingReviewId} onSubmit={handleSubmitReview} />
           </div>
         </aside>
 

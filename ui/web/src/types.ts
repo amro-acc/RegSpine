@@ -256,6 +256,43 @@ export interface ObligationRelationsResponse {
   relations_count: number;
 }
 
+// HITL review queue -- GET/POST /api/v1/review (also mounted bare at
+// /review). Scoped to gaps only for v1 (src/api/main.py's module comment
+// on this section explains why).
+export type ReviewAction = "accept" | "reject" | "amend";
+
+export interface ReviewQueueItem {
+  id: string;
+  run_id: string;
+  obligation_id: string;
+  obligation_text: string;
+  verbatim_quote: string | null;
+  gap_class: string;
+  narrative: string;
+  risk_score: number;
+  risk_band: RiskBand;
+  status: string;
+  confidence: number;
+  review_state: ReviewState;
+}
+
+export interface ReviewSubmission {
+  gap_id: string;
+  reviewer: string;
+  action: ReviewAction;
+  adjusted_fields?: Record<string, string> | null;
+  note?: string | null;
+}
+
+export interface ReviewActionResponse {
+  gap_id: string;
+  review_state: ReviewState;
+  status: string;
+  gap_class: string;
+  risk_band: RiskBand;
+  narrative: string;
+}
+
 // ============ UI-only types ============
 
 export type NodeKind = "obligation" | "control" | "gap" | "remediation";

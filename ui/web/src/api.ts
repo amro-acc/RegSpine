@@ -8,6 +8,9 @@ import type {
   LineageResponse,
   ObligationRelationsRequest,
   ObligationRelationsResponse,
+  ReviewActionResponse,
+  ReviewQueueItem,
+  ReviewSubmission,
 } from "./types";
 
 // src/api/main.py runs on :$VITE_API_PORT (make api, default 8055 -- see
@@ -73,5 +76,15 @@ export async function findObligationRelations(
   payload: ObligationRelationsRequest
 ): Promise<ObligationRelationsResponse> {
   const response = await client.post<ObligationRelationsResponse>("/api/v1/obligations/relations", payload);
+  return response.data;
+}
+
+export async function listReviewQueue(): Promise<ReviewQueueItem[]> {
+  const response = await client.get<ReviewQueueItem[]>("/api/v1/review");
+  return response.data;
+}
+
+export async function submitReview(payload: ReviewSubmission): Promise<ReviewActionResponse> {
+  const response = await client.post<ReviewActionResponse>("/api/v1/review", payload);
   return response.data;
 }
