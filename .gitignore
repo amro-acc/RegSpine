@@ -47,3 +47,5 @@ npm-debug.log*
 *.doc
 *.docx
 *.pdf
+*.ppt
+*.pptx
