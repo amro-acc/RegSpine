@@ -55,8 +55,14 @@ SEED_ENTITIES: list[dict] = [
     {
         "name": "Meridian Bank Europe SE",
         "jurisdiction": "EU",
-        "licences": ["credit_institution"],
+        "licences": ["ecb_credit_institution", "dora_financial_entity"],
         "product_lines": [],
+    },
+    {
+        "name": "Meridian Bank India",
+        "jurisdiction": "IN",
+        "licences": ["scheduled_commercial_bank"],
+        "product_lines": ["retail_banking", "digital_payments"],
     },
 ]
 
