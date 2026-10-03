@@ -173,7 +173,7 @@ def test_audit_agent_routes_low_confidence_gap_to_needs_review():
     control = _make_control()
     from src.core.schemas import ControlMapping
 
-    # 0.4 is below config/pipeline.yaml's confidence_bands.proposed_floor (0.60).
+    # 0.4 is below config/pipeline.yaml's confidence_bands.proposed_floor (0.70).
     mapping = ControlMapping(
         obligation_id=obligation.id,
         control_id=control.id,
@@ -209,14 +209,14 @@ def test_audit_agent_keeps_proposed_at_confidence_floor_boundary():
     control = _make_control()
     from src.core.schemas import ControlMapping
 
-    # Exactly 0.60 -- the floor itself is still "proposed", only strictly
-    # below it is "needs_review" (confidence_bands: "0.60-0.85 -> proposed").
+    # Exactly 0.70 -- the floor itself is still "proposed", only strictly
+    # below it is "needs_review" (confidence_bands: "0.70-0.85 -> proposed").
     mapping = ControlMapping(
         obligation_id=obligation.id,
         control_id=control.id,
         coverage_level=CoverageLevel.PARTIAL,
         rationale="r",
-        confidence=0.6,
+        confidence=0.7,
         created_by_agent="mapping_agent",
         model_id="gpt-5.1",
         prompt_version="v1",

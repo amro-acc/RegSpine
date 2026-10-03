@@ -21,8 +21,11 @@ mapping:
 
 confidence_bands:
   auto_accept: 0.85       # Scores >= this threshold are automatically accepted and logged.
-  proposed_floor: 0.60    # Scores between 0.60 and 0.85 are accepted as 'proposed' and flagged in the UI.
+  proposed_floor: 0.70    # Scores between 0.70 and 0.85 are accepted as 'proposed' and flagged in the UI.
   # Scores below proposed_floor are sent to the HITL (Human-in-the-Loop) queue and excluded from headline outputs until reviewed.
+  # Tuned up from 0.60 -- gpt-5.1's extractor-role (minimal reasoning effort)
+  # confidence rarely drops below ~65-70% even on genuinely ambiguous input,
+  # so 0.60 was effectively unreachable in practice.
   #
   # Note: These thresholds do not apply to fallback model outputs. 
   # Fallback paths are always forced to 'proposed' and routed to HITL regardless of confidence.
