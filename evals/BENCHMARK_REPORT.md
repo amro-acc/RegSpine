@@ -1,6 +1,6 @@
 # Benchmark Report
 
-Generated: 2026-09-29T06:54:36.989091+00:00
+Generated: 2026-10-03T11:40:29.437081+00:00
 
 10 golden obligation cases (`evals/golden/golden_obligations.json`), 10 golden mapping cases (`evals/golden/golden_mappings.json`), and 5 golden relation-classification cases (`evals/golden/golden_relations.json`), spanning DORA, NIS2, Basel III, PCI DSS, and GDPR synthetic clauses.
 
@@ -9,7 +9,7 @@ Generated: 2026-09-29T06:54:36.989091+00:00
 | Metric | Value |
 | --- | --- |
 | Extraction F1 Score | 0.900 |
-| Mapping Accuracy | 100.0% |
+| Mapping Accuracy | 90.0% |
 | Provenance Grounding Rate | 100.0% |
 | Fallback / Review Trigger Rate | 0.0% |
 | Relation Classification Accuracy | 100.0% |
@@ -29,10 +29,10 @@ Generated: 2026-09-29T06:54:36.989091+00:00
 
 | Metric | Value |
 | --- | --- |
-| Top-1 accuracy (retrieval+rerank) | 71.4% |
-| Top-3 recall (retrieval+rerank) | 85.7% |
-| Coverage-level classification agreement | 100.0% |
-| Cosine-vs-reranker top-1 alignment | 50.0% |
+| Top-1 accuracy (retrieval+rerank) | 85.7% |
+| Top-3 recall (retrieval+rerank) | 100.0% |
+| Coverage-level classification agreement | 90.0% |
+| Cosine-vs-reranker top-1 alignment | 60.0% |
 | needs_review rate | 0.0% |
 
 ## Provenance detail (hallucination rate)
