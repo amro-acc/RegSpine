@@ -12,6 +12,22 @@ you can set up independently (§3 onward).
 
 ---
 
+## Tech stack
+
+| Layer | Technology |
+| --- | --- |
+| Backend | FastAPI (Python), Pydantic v2 |
+| Agent orchestration | LangGraph |
+| LLMs | GPT-5.1 (extractor/reasoner, via Azure AI Foundry) · GPT-5.6-Luna (reasoner fallback) · Gemini-3.8-flash (independent judge, Google AI Studio) |
+| Retrieval | ChromaDB (local, embedded) + `sentence-transformers/all-MiniLM-L6-v2` embeddings + `bge-reranker-base` cross-encoder reranking |
+| Database | Supabase (hosted Postgres) |
+| Local cache | SQLite (`cache.db`) — LLM response cache + LangGraph checkpointer |
+| Frontend | React + TypeScript + Vite, Tailwind CSS, React Flow (`@xyflow/react`) for the lineage graph |
+
+See [`techstack.md`](techstack.md) for the rationale behind each choice, cost/quota tradeoffs, and the operational cost model.
+
+---
+
 ## 1. Prerequisites
 
 | Tool | Version | Notes |
@@ -102,11 +118,14 @@ for the frontend in the same step — §9 covers the frontend on its own if you
 want to do it separately).
 
 Key backend dependencies installed: `fastapi`, `uvicorn`, `langgraph` +
-`langgraph-checkpoint-sqlite`, `langchain` + `langchain-openai` +
-`langchain-google-genai`, `pydantic>=2.7`, `chromadb`, `sentence-transformers`,
-`FlagEmbedding` (reranker), `supabase`, `psycopg2-binary` (direct Postgres,
-needed for migrations), `PyMuPDF`/`pdfplumber`/`openpyxl` (document parsing),
-`pyyaml`, `python-dotenv`.
+`langgraph-checkpoint-sqlite`, `langchain-openai` (OpenAI calls, via its
+`ChatOpenAI`), `google-genai` (Gemini calls — the raw SDK, not
+`langchain-google-genai`; that wrapper rejects Google's newer key format, see
+`src/llm/gemini_client.py`), `pydantic>=2.7`, `chromadb`,
+`sentence-transformers`, `FlagEmbedding` (reranker), `supabase`,
+`psycopg2-binary` (direct Postgres, needed for migrations),
+`PyMuPDF`/`pdfplumber`/`openpyxl` (document parsing), `pyyaml`,
+`python-dotenv`.
 
 ---
 
@@ -130,8 +149,8 @@ on (idempotent — safe to re-run, skips rows that already exist by name):
 .venv\Scripts\python.exe scripts/seed_supabase.py
 ```
 
-This creates two bank profiles: "Meridian Bank USA" and "Meridian Bank Europe
-SE". If you're pointing at a **fresh** Postgres instance (not the shared
+This creates three bank profiles: "Meridian Bank USA", "Meridian Bank Europe
+SE", and "Meridian Bank India". If you're pointing at a **fresh** Postgres instance (not the shared
 Supabase project, which already has this applied), also run the one-off
 licence correction so DORA obligations aren't filtered out for the EU entity:
 
@@ -172,6 +191,12 @@ Default port is **8055** (overridable: `API_PORT=9000 make api`, or set
 `ui/web/.env`'s `VITE_API_PORT` to match (§9) — the frontend reads its API
 base URL from there.
 
+On startup, the server warms the embedding model and reranker before it
+accepts requests (you'll see "Warming embedding model and reranker..." in
+the terminal) — a few minutes the first time while they download, seconds on
+later starts. This moves that cost to startup instead of onto whoever
+triggers the first real audit.
+
 Once running, check `http://localhost:8055/docs` for interactive API docs
 (FastAPI's default Swagger UI — there's no separate `/health` route).
 
@@ -211,7 +236,9 @@ on your machine.
 
 Backend routes, for reference: `POST /api/v1/audit`,
 `GET /api/v1/bank_entities`, `POST /api/v1/changes/diff`,
-`GET /api/v1/lineage/{run_id}`.
+`POST /api/v1/obligations/relations`, `GET /api/v1/lineage/{run_id}`,
+`GET`/`POST /api/v1/review` (the human review queue — also mounted bare at
+`/review`).
 
 ---
 
@@ -227,6 +254,20 @@ All tests mock the network boundary (LLM clients, Supabase) — no live API
 keys or database connection needed to run them. Expect ~2–5 minutes; one
 integration test loads the real embedding/reranker models, which is the slow
 part.
+
+To reproduce the reliability numbers cited in the architecture deck
+(extraction F1, provenance grounding rate, mapping accuracy, etc.), run the
+eval harness instead — this one does need live LLM keys on a cold cache:
+
+```powershell
+make eval
+# or directly:
+.venv\Scripts\python.exe evals/run_benchmarks.py
+```
+
+Writes `evals/results.json` and `evals/BENCHMARK_REPORT.md`. Every scorer
+call goes through the same LLM cache as everything else, so a second run
+replays instantly instead of re-hitting live providers.
 
 ---
 
@@ -272,7 +313,7 @@ These `Makefile` targets exist for documented-interface consistency but exit
 | Target | Why it's stubbed |
 | --- | --- |
 | `make run` | No single-document pipeline CLI exists; the pipeline is invoked via `POST /api/v1/audit` instead |
-| `make eval` / `make eval-fast` | `evals/golden/` and `evals/scorers/` are both empty — no golden sets labelled yet |
+| `make eval-fast` | No cut-down/sampled variant of `make eval` exists (§11 covers the real `make eval`) |
 | `make faults` | Fault-injection harness not built |
 | `make demo` | No scripted demo-replay harness built |
 
