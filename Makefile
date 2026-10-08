@@ -49,6 +49,13 @@ ui:
 test:
 	cd . && $(VENV_PY) -m pytest tests/ -v
 
+# Runs all 5 scorers against the golden sets (evals/golden/) and writes
+# evals/results.json + evals/BENCHMARK_REPORT.md. Every scorer call goes
+# through the same LLM cache everything else does, so a second run
+# replays instantly instead of re-hitting live providers.
+eval:
+	cd . && $(VENV_PY) evals/run_benchmarks.py
+
 # --- Not built yet ---
 # Kept as real targets so the command interface stays documented and
 # consistent, even though nothing backs them yet. Failing loudly beats
@@ -60,13 +67,8 @@ run:
 	@echo state_graph.py is invoked via src/api/main.py's POST /api/v1/audit instead.
 	@exit 1
 
-eval:
-	@echo make eval: not built yet -- evals/golden and evals/scorers are both empty;
-	@echo no golden sets have been labelled yet.
-	@exit 1
-
 eval-fast:
-	@echo make eval-fast: not built yet -- same blocker as 'make eval'.
+	@echo make eval-fast: not built yet -- no cut-down/sampled variant of 'make eval' exists.
 	@exit 1
 
 faults:

@@ -176,12 +176,13 @@ function App() {
       const lineageResult = await getLineage(audit.run_id);
       setLineage(lineageResult);
       setRunStatus("completed");
+      refreshReviewQueue();
     } catch (err) {
       setRunStatus("failed");
       const message = err instanceof Error ? err.message : "Unknown error";
       setErrorMessage(message);
     }
-  }, [regulationText, policyText, bankProfileId]);
+  }, [regulationText, policyText, bankProfileId, refreshReviewQueue]);
 
   const runChangeDiff = useCallback(async () => {
     if (!auditResponse) return;

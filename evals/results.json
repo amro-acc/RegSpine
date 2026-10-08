@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-29T06:54:36.989091+00:00",
+  "generated_at": "2026-10-03T11:40:29.437081+00:00",
   "extraction": {
     "true_positives": 9,
     "false_positives": 1,
@@ -113,11 +113,11 @@
     ]
   },
   "mapping": {
-    "top1_accuracy": 0.7142857142857143,
-    "top3_recall": 0.8571428571428571,
-    "classification_agreement": 1.0,
+    "top1_accuracy": 0.8571428571428571,
+    "top3_recall": 1.0,
+    "classification_agreement": 0.9,
     "needs_review_rate": 0.0,
-    "cosine_reranker_alignment_rate": 0.5,
+    "cosine_reranker_alignment_rate": 0.6,
     "cases": [
       {
         "id": "GM-01",
@@ -139,15 +139,15 @@
       {
         "id": "GM-02",
         "ranked_refs": [
-          null,
+          "ctrl-02-target",
           null,
           "ctrl-02-d1"
         ],
         "expected_control_id": "ctrl-02-target",
-        "top1_hit": false,
-        "top3_hit": false,
+        "top1_hit": true,
+        "top3_hit": true,
         "cosine_top1_ref": "ctrl-02-target",
-        "reranker_top1_ref": null,
+        "reranker_top1_ref": "ctrl-02-target",
         "predicted_coverage": "none",
         "expected_coverage": "none",
         "classification_match": true
@@ -277,9 +277,9 @@
         "top3_hit": null,
         "cosine_top1_ref": "ctrl-10-d3",
         "reranker_top1_ref": null,
-        "predicted_coverage": "none",
+        "predicted_coverage": "partial",
         "expected_coverage": "none",
-        "classification_match": true
+        "classification_match": false
       }
     ]
   },
@@ -311,7 +311,7 @@
       },
       {
         "case_id": "GO-03",
-        "obligation_text": "Financial entities are allowed, where proportionate to their size and overall risk profile, to rely on pooled testing arrangements coordinated by a third party to satisfy the digital operational resilience testing programme requirement.",
+        "obligation_text": "Financial entities may rely on pooled testing arrangements coordinated by a third party to satisfy the digital operational resilience testing programme requirement, where proportionate to their size and overall risk profile.",
         "independently_verified": true,
         "agent_reported_verified": true,
         "match_ratio": 1.0,
@@ -320,7 +320,7 @@
       },
       {
         "case_id": "GO-04",
-        "obligation_text": "Financial entities must establish, document, and periodically test an ICT business continuity policy that defines recovery time objectives and recovery point objectives for critical or important functions.",
+        "obligation_text": "Financial entities must establish, document, and periodically test an ICT business continuity policy that sets out recovery time objectives and recovery point objectives for critical or important functions.",
         "independently_verified": true,
         "agent_reported_verified": true,
         "match_ratio": 1.0,
@@ -329,7 +329,7 @@
       },
       {
         "case_id": "GO-05",
-        "obligation_text": "Essential and important entities must submit an early warning to the competent CSIRT and a full incident notification following a significant incident.",
+        "obligation_text": "Essential and important entities must submit an early warning to the competent CSIRT, followed by a full incident notification after becoming aware of a significant incident.",
         "independently_verified": true,
         "agent_reported_verified": true,
         "match_ratio": 1.0,
@@ -374,7 +374,7 @@
       },
       {
         "case_id": "GO-10",
-        "obligation_text": "A bank must ensure that its exposure to a single counterparty or group of connected counterparties does not exceed 25% of the bank's available Tier 1 capital, except where a specific exemption applies to exposures to sovereigns.",
+        "obligation_text": "A bank must ensure that its exposure to a single counterparty or group of connected counterparties does not exceed 25% of its available Tier 1 capital, except where a specific exemption applies to exposures to sovereigns.",
         "independently_verified": true,
         "agent_reported_verified": true,
         "match_ratio": 1.0,
@@ -396,28 +396,28 @@
         "expected_relation_type": "conflicts_with",
         "predicted_relation_type": "conflicts_with",
         "match": true,
-        "rationale": "Basel III requires that \"Financial institutions shall retain full transaction records for a minimum of ten years from the date of the transaction,\" implying long-term retention of all transaction records. GDPR requires that \"Financial institutions shall erase personal data relating to a data subject no later than five years after the data subject's account is closed, upon request,\" which can require deletion of personal data embedded in those same transaction records well before the ten-year minimum. When transaction records contain personal data relating to a data subject who requests erasure, retaining the full record for ten years conflicts with the duty to erase that personal data within five years of account closure."
+        "rationale": "Basel III requires institutions to \"retain full transaction records for a minimum of ten years from the date of the transaction,\" implying long-term retention of all transaction data. GDPR, however, requires institutions to \"erase personal data relating to a data subject no later than five years after the data subject's account is closed, upon request,\" which can include personal data embedded in those transaction records. When transaction records contain personal data, retaining them for ten years directly conflicts with the obligation to erase that personal data within five years after account closure upon request."
       },
       {
         "id": "GR-02",
         "expected_relation_type": "overlaps",
         "predicted_relation_type": "overlaps",
         "match": true,
-        "rationale": "Obligation A (DORA) requires that \"Financial entities shall report major ICT-related incidents to the competent authority within 24 hours of detection.\" Obligation B (NIS2) requires that \"Essential entities shall submit an early warning to the competent CSIRT within 24 hours of becoming aware of a significant incident.\" Both target the same underlying control: an initial incident notification within 24 hours of knowledge of a serious ICT/significant incident, albeit to different recipients (\"competent authority\" vs \"competent CSIRT\") and with slightly different framing (\"report\" vs \"early warning\")."
+        "rationale": "Obligation A (DORA) requires \"Financial entities\" to \"report major ICT-related incidents to the competent authority within 24 hours of detection.\" Obligation B (NIS2) requires \"Essential entities\" to \"submit an early warning to the competent CSIRT within 24 hours of becoming aware of a significant incident.\" Both impose a duty to notify a competent body about serious ICT/significant incidents within a 24-hour timeframe from detection/awareness, differing mainly in the type of authority (competent authority vs CSIRT) and the framing of the initial report (report vs early warning)."
       },
       {
         "id": "GR-03",
         "expected_relation_type": "supersedes",
         "predicted_relation_type": "supersedes",
         "match": true,
-        "rationale": "Obligation A (PCI DSS v3.2.1) requires merchants to \"encrypt cardholder data using TLS 1.1 or higher for transmission over open, public networks.\" Obligation B (PCI DSS v4.0) updates this same requirement to \"encrypt cardholder data using TLS 1.2 or higher for transmission over open, public networks, with support for TLS 1.1 removed entirely.\" Both address the identical control (TLS encryption of cardholder data over open networks), but B tightens the minimum version and explicitly deprecates TLS 1.1, making it a stricter, later version of the same obligation."
+        "rationale": "Obligation A (PCI DSS v3.2.1) requires \"encrypt cardholder data using TLS 1.1 or higher for transmission over open, public networks.\" Obligation B (PCI DSS v4.0) addresses the same control but tightens it by requiring \"encrypt cardholder data using TLS 1.2 or higher for transmission over open, public networks, with support for TLS 1.1 removed entirely,\" making it a stricter, later version of the same requirement."
       },
       {
         "id": "GR-04",
         "expected_relation_type": "implements",
         "predicted_relation_type": "implements",
         "match": true,
-        "rationale": "Obligation A requires banks to \"maintain a robust operational resilience capability commensurate with the nature, scale, and complexity of their operations,\" which is a broad requirement to withstand and recover from disruptions. Obligation B requires financial entities to \"establish and maintain a documented ICT-related incident response and recovery plan detailing escalation procedures, roles, and communication channels,\" which is a specific control focused on ICT incidents that directly supports and forms part of the broader operational resilience capability mandated in A."
+        "rationale": "Obligation A from Basel III requires banks to \"maintain a robust operational resilience capability commensurate with the nature, scale, and complexity of their operations,\" which is a broad requirement to ensure resilience of operations. Obligation B from DORA requires financial entities to \"establish and maintain a documented ICT-related incident response and recovery plan detailing escalation procedures, roles, and communication channels,\" which specifies a concrete ICT incident response and recovery mechanism. A documented ICT incident response and recovery plan is one specific control that directly contributes to and helps implement the broader operational resilience capability required in A."
       },
       {
         "id": "GR-05",
@@ -430,7 +430,7 @@
   },
   "headline": {
     "extraction_f1": 0.9,
-    "mapping_accuracy_pct": 100.0,
+    "mapping_accuracy_pct": 90.0,
     "provenance_grounding_rate_pct": 100.0,
     "fallback_review_trigger_rate_pct": 0.0,
     "relation_classification_accuracy_pct": 100.0
