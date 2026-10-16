@@ -315,7 +315,6 @@ These `Makefile` targets exist for documented-interface consistency but exit
 | `make run` | No single-document pipeline CLI exists; the pipeline is invoked via `POST /api/v1/audit` instead |
 | `make eval-fast` | No cut-down/sampled variant of `make eval` exists (§11 covers the real `make eval`) |
 | `make faults` | Fault-injection harness not built |
-| `make demo` | No scripted demo-replay harness built |
 
 Also out of scope for now: OCR, multimodal ingestion, and cross-provider
 fallback for `EXTRACTOR`.
